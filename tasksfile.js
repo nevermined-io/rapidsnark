@@ -63,7 +63,7 @@ function buildProverServer() {
     );
 }
 
-
+/*
 function buildProver() {
     sh("g++" +
         " -I."+
@@ -73,6 +73,31 @@ function buildProver() {
         " ../src/main_prover.cpp"+
         " ../src/binfile_utils.cpp"+
         " ../src/zkey_utils.cpp"+
+        " ../src/wtns_utils.cpp"+
+        " ../src/logger.cpp"+
+        " ../depends/ffiasm/c/misc.cpp"+
+        " ../depends/ffiasm/c/naf.cpp"+
+        " ../depends/ffiasm/c/splitparstr.cpp"+
+        " ../depends/ffiasm/c/alt_bn128.cpp"+
+        " fq.cpp"+
+        " fq.o"+
+        " fr.cpp"+
+        " fr.o"+
+        " -o prover" +
+        " -fmax-errors=5 -std=c++17 -pthread -lgmp -lsodium -O3 -fopenmp", {cwd: "build", nopipe: true}
+    );
+}
+*/
+
+function buildProver() {
+    sh("g++" +
+        " -I."+
+        " -I../src"+
+        " -I../depends/ffiasm/c"+
+        " -I../depends/json/single_include"+
+        " ../src/main_prover_plonk.cpp"+
+        " ../src/binfile_utils.cpp"+
+        " ../src/zkey_utils_plonk.cpp"+
         " ../src/wtns_utils.cpp"+
         " ../src/logger.cpp"+
         " ../depends/ffiasm/c/misc.cpp"+

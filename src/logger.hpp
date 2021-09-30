@@ -112,6 +112,7 @@ namespace CPlusPlusLogging
          // Interface for Debug log 
          void debug(const char* text) throw();
          void debug(std::string& text) throw();
+         void debug(std::string text) throw();
          void debug(std::ostringstream& stream) throw();
 
          // Error and Alarm log must be always enable

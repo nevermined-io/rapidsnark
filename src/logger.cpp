@@ -323,6 +323,11 @@ void Logger::debug(std::string& text) throw()
    debug(text.data());
 }
 
+void Logger::debug(std::string text) throw()
+{
+   debug(text.data());
+}
+
 void Logger::debug(std::ostringstream& stream) throw()
 {
    string text = stream.str();
