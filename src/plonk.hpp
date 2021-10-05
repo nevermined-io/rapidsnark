@@ -4,6 +4,7 @@ using json = nlohmann::json;
 
 #include "binfile_utils.hpp"
 #include "fft.hpp"
+#include <sha3.h>
 #include "logger.hpp"
 using namespace CPlusPlusLogging;
 
@@ -54,6 +55,8 @@ namespace Plonk {
         typename Engine::G1PointAffine &S3;
         typename Engine::G2PointAffine &X_2;
 
+        typename Engine::G1PointAffine *PTau;
+
         typename Engine::FrElement *internalWitness;
         typename Engine::FrElement *wtns;
 
@@ -85,7 +88,8 @@ namespace Plonk {
             uint8_t *_additions,
             uint8_t *_aMap,
             uint8_t *_bMap,
-            uint8_t *_cMap
+            uint8_t *_cMap,
+            typename Engine::G1PointAffine *_PTau
         ) : 
             E(_E), 
             nVars(_nVars),
@@ -104,6 +108,7 @@ namespace Plonk {
             S2(_S2),
             S3(_S3),
             X_2(_X_2),
+            PTau(_PTau),
             additions(_additions),
             Amap(_aMap),
             Bmap(_bMap),
@@ -119,32 +124,104 @@ namespace Plonk {
 
         std::unique_ptr<Proof<Engine>> prove(typename Engine::FrElement *wtns);
 
+        typename Engine::FrElement hashToFr(uint8_t *transcript, int size) {
+
+        }
+
+        void G1toRprUncompressed(uint8_t *transcript1, int offset, typename Engine::G1PointAffine &p) {
+            uint8_t *tmp;
+            typename Engine::F1Element bm;
+            E.f1.fromMontgomery(bm, p.x);
+            tmp = (uint8_t*)(&bm);
+            for (int i = 0; i < 32; i++) {
+                transcript1[i+offset] = tmp[31-i];
+            }
+            E.f1.fromMontgomery(bm, p.y);
+            tmp = (uint8_t*)(&bm);
+            for (int i = 0; i < 32; i++) {
+                transcript1[i+offset+32] = tmp[31-i];
+            }
+
+        }
+
+        typename Engine::G1PointAffine expTau(typename Engine::FrElement *b, int size) {
+            typename Engine::FrElement *bm = new typename Engine::FrElement[size];
+            for (int i = 0; i < size; i++) {
+                E.fr.fromMontgomery(bm[i], b[i]);
+            }
+            LOG_DEBUG("from montgomery");
+            LOG_DEBUG(E.fr.toString(bm[0]).c_str());
+            typename Engine::G1Point res;
+            typename Engine::G1PointAffine res2;
+            E.g1.multiMulByScalar(res, PTau, (uint8_t *)bm, sizeof(bm[0]), size);
+            E.g1.copy(res2, res);
+            /*
+            LOG_DEBUG("size");
+            LOG_DEBUG(std::to_string(size));
+            */
+            LOG_DEBUG("exptau result");
+            LOG_DEBUG(E.f1.toString(res2.x).c_str());
+            /*
+            LOG_DEBUG("ptau[0]");
+            LOG_DEBUG(E.f1.toString(PTau[0].x).c_str());
+            LOG_DEBUG(E.f1.toString(PTau[0].y).c_str());
+            LOG_DEBUG(E.f1.toString(PTau[1].x).c_str());
+            LOG_DEBUG(E.f1.toString(PTau[1].y).c_str());
+            */
+            return res2;
+        }
+
         void to4T(typename Engine::FrElement *A, uint32_t size, std::vector<typename Engine::FrElement> pz, typename Engine::FrElement* & a1, typename Engine::FrElement* &A4) {
             typename Engine::FrElement *a = new typename Engine::FrElement[2*size];
+            /*
             for (int i = 0; i < size*2; i++) {
                 a[i] = E.fr.zero();
-            }
-            a[0] = A[0];
-            a[1] = A[1];
-            a[2] = A[1];
-            // size = 16;
+            }*/
             for (int i = 0; i < size; i++) {
                 a[i] = A[i];
-                LOG_DEBUG("hmm");
-                LOG_DEBUG(E.fr.toString(a[i]).c_str());
+                // LOG_DEBUG("hmm");
+                // LOG_DEBUG(E.fr.toString(a[i]).c_str());
             }
+            /*
             LOG_DEBUG("before ifft");
             LOG_DEBUG(E.fr.toString(a[0]).c_str());
             LOG_DEBUG("size");
             LOG_DEBUG(std::to_string(size));
+            */
             u_int32_t domainPower = fft->log2(size);
             fft->ifft(a, size);
             LOG_DEBUG("after ifft");
             LOG_DEBUG(E.fr.toString(a[0]).c_str());
+
+            typename Engine::FrElement *a4 = new typename Engine::FrElement[4*size];
+            for (int i = 0; i < size*2; i++) {
+                a4[i] = a[i];
+            }
+
+            a1 = new typename Engine::FrElement[size+pz.size()];
+            for (int i = 0; i < size+pz.size(); i++) {
+                a1[i] = a[i];
+            }
+
+            typename Engine::FrElement tmp;
+            for (int i = 0; i < pz.size(); i++) {
+                E.fr.add(a1[size+i], a1[size+i], pz[i]);
+                E.fr.sub(a1[i], a1[i], pz[i]);
+                LOG_DEBUG("randoms");
+                LOG_DEBUG(E.fr.toString(a1[i]).c_str());
+                LOG_DEBUG(E.fr.toString(a1[size+i]).c_str());
+            }
+
+            /*
             LOG_DEBUG("nVars");
             LOG_DEBUG(std::to_string(nVars));
             LOG_DEBUG("nAdditions");
             LOG_DEBUG(std::to_string(nAdditions));
+            */
+            fft->fft(a4, size*2);
+            A4 = a4;
+            LOG_DEBUG("A4");
+            LOG_DEBUG(E.fr.toString(A4[0]).c_str());
         }
 
         typename Engine::FrElement& getWitness(uint32_t idx) {
@@ -179,7 +256,8 @@ namespace Plonk {
         void *additions,
         void *amap,
         void *bmap,
-        void *cmap
+        void *cmap,
+        void *PTau
     ) {
         Prover<Engine> *p = new Prover<Engine>(
             Engine::engine, 
@@ -202,7 +280,8 @@ namespace Plonk {
             (uint8_t*)additions,
             (uint8_t*)amap,
             (uint8_t*)bmap,
-            (uint8_t*)cmap
+            (uint8_t*)cmap,
+            (typename Engine::G1PointAffine *)PTau
         );
         return std::unique_ptr< Prover<Engine> >(p);
     }

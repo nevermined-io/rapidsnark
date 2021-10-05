@@ -69,7 +69,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
         uint32_t iB = readUInt32(Bmap, i*4);
         B[i] = getWitness(iB);
         uint32_t iC = readUInt32(Cmap, i*4);
-        B[i] = getWitness(iB);
+        C[i] = getWitness(iC);
     }
 
     LOG_DEBUG(E.fr.toString(A[0]).c_str());
@@ -91,6 +91,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
         // b[i] = E.fr.random();
     }
 
+    // TODO: remove this
     // they shouldn't really be random for testing
     for (int i = 0; i < 10; i++) {
         aux2 = E.fr.zero();
@@ -104,7 +105,28 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
 
     typename Engine::FrElement *pol_a, *A4;
     to4T(A, domainSize, {b[2], b[1]}, pol_a, A4);
+    typename Engine::FrElement *pol_b, *B4;
+    to4T(B, domainSize, {b[4], b[3]}, pol_b, B4);
+    typename Engine::FrElement *pol_c, *C4;
+    to4T(C, domainSize, {b[6], b[5]}, pol_c, C4);
 
+    typename Engine::G1PointAffine proof_A = expTau(pol_a, domainSize+2);
+    typename Engine::G1PointAffine proof_B = expTau(pol_b, domainSize+2);
+    typename Engine::G1PointAffine proof_C = expTau(pol_c, domainSize+2);
+
+    // Round 2
+
+    uint8_t *transcript1 = new uint8_t[64*3];
+    G1toRprUncompressed(transcript1, 0, proof_A);
+    G1toRprUncompressed(transcript1, 64, proof_B);
+    G1toRprUncompressed(transcript1, 128, proof_C);
+    // Add stuff to transcript
+    LOG_DEBUG("transcript");
+    LOG_DEBUG(std::to_string((int)transcript1[0]));
+    LOG_DEBUG(std::to_string((int)transcript1[1]));
+    LOG_DEBUG(std::to_string((int)transcript1[2]));
+    LOG_DEBUG(std::to_string((int)transcript1[3]));
+    LOG_DEBUG(std::to_string((int)transcript1[4]));
 
 /*
     LOG_TRACE("Start Initializing a b c A");
