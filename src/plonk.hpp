@@ -4,7 +4,11 @@ using json = nlohmann::json;
 
 #include "binfile_utils.hpp"
 #include "fft.hpp"
-#include <sha3.h>
+
+extern "C" {
+    #include <sha3.h>
+}
+
 #include "logger.hpp"
 using namespace CPlusPlusLogging;
 
@@ -125,7 +129,41 @@ namespace Plonk {
         std::unique_ptr<Proof<Engine>> prove(typename Engine::FrElement *wtns);
 
         typename Engine::FrElement hashToFr(uint8_t *transcript, int size) {
-
+            uint8_t out[32];
+            sha3_HashBuffer(256, SHA3_FLAGS_KECCAK, transcript, size, out, sizeof(out));
+            /*
+            LOG_DEBUG("hash keccak");
+            LOG_DEBUG(std::to_string((int)out[0]));
+            LOG_DEBUG(std::to_string((int)out[1]));
+            LOG_DEBUG(std::to_string((int)out[2]));
+            LOG_DEBUG(std::to_string((int)out[3]));
+            LOG_DEBUG(std::to_string((int)out[4]));
+            */
+            std::string tmp = "";
+            typename Engine::FrElement res = E.fr.zero();
+            typename Engine::FrElement tmp_num;
+            typename Engine::FrElement e256;
+            E.fr.fromString(e256, "256");
+            for (int i = 0; i < 32; i++) {
+                int j = i;
+                char d1 = out[j] % 10;
+                char d2 = out[j] / 10 % 10;
+                char d3 = out[j] / 100 % 10;
+                // std::cerr << (int)d3 << " " << (int)d2 << " " << (int)d1 << " -- " << (int)out[j] << "\n";
+                tmp = "";
+                tmp += ('0' + d3);
+                tmp += ('0'+d2);
+                tmp += ('0'+d1);
+                E.fr.fromString(tmp_num, tmp);
+                // std::cerr << "tmp " << E.fr.toString(tmp_num) << " from " << tmp << "\n";
+                E.fr.mul(res, res, e256);
+                // std::cerr << "acc " << E.fr.toString(res) << " mul " << E.fr.toString(e256) << "\n";
+                E.fr.add(res, res, tmp_num);
+                // std::cerr << "acc " << E.fr.toString(res) << "\n";
+            }
+            LOG_DEBUG("hash keccak");
+            LOG_DEBUG(E.fr.toString(res).c_str());
+            return res;
         }
 
         void G1toRprUncompressed(uint8_t *transcript1, int offset, typename Engine::G1PointAffine &p) {

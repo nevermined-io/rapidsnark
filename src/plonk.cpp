@@ -121,12 +121,16 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
     G1toRprUncompressed(transcript1, 64, proof_B);
     G1toRprUncompressed(transcript1, 128, proof_C);
     // Add stuff to transcript
+    /*
     LOG_DEBUG("transcript");
     LOG_DEBUG(std::to_string((int)transcript1[0]));
     LOG_DEBUG(std::to_string((int)transcript1[1]));
     LOG_DEBUG(std::to_string((int)transcript1[2]));
     LOG_DEBUG(std::to_string((int)transcript1[3]));
     LOG_DEBUG(std::to_string((int)transcript1[4]));
+    */
+
+    typename Engine::FrElement beta = hashToFr(transcript1, 64*3);
 
 /*
     LOG_TRACE("Start Initializing a b c A");
