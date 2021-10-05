@@ -81,7 +81,13 @@ int main(int argc, char **argv) {
             zkey->getSectionData(14),   // Ptau
             zkeyHeader->k1,
             zkeyHeader->k2,
-            zkey->getSectionData(12)    // Sigma
+            zkey->getSectionData(12),   // Sigma
+            zkey->getSectionData(7),   // Qm
+            zkey->getSectionData(8),   // Ql
+            zkey->getSectionData(9),   // Qr
+            zkey->getSectionData(10),   // Qo
+            zkey->getSectionData(11),   // Qc
+            zkey->getSectionData(13)    // polData
         );
         AltBn128::FrElement *wtnsData = (AltBn128::FrElement *)wtns->getSectionData(2);
         auto proof = prover->prove(wtnsData);

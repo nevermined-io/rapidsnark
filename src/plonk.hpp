@@ -73,6 +73,18 @@ namespace Plonk {
 
         typename Engine::FrElement *sigmaData;
 
+        typename Engine::FrElement *qmData;
+        typename Engine::FrElement *qlData;
+        typename Engine::FrElement *qrData;
+        typename Engine::FrElement *qoData;
+        typename Engine::FrElement *qcData;
+        typename Engine::FrElement *polData;
+        typename Engine::FrElement frw[29];
+
+        typename Engine::FrElement Z1[4];
+        typename Engine::FrElement Z2[4];
+        typename Engine::FrElement Z3[4];
+
         FFT<typename Engine::Fr> *fft;
     public:
         Prover(
@@ -100,7 +112,13 @@ namespace Plonk {
             typename Engine::G1PointAffine *_PTau,
             typename Engine::FrElement _k1,
             typename Engine::FrElement _k2,
-            typename Engine::FrElement *_sigmaData
+            typename Engine::FrElement *_sigmaData,
+            typename Engine::FrElement *_qmData,
+            typename Engine::FrElement *_qlData,
+            typename Engine::FrElement *_qrData,
+            typename Engine::FrElement *_qoData,
+            typename Engine::FrElement *_qcData,
+            typename Engine::FrElement *_polData
         ) : 
             E(_E), 
             nVars(_nVars),
@@ -126,10 +144,56 @@ namespace Plonk {
             Cmap(_cMap),
             k1(_k1),
             k2(_k2),
-            sigmaData(_sigmaData)
+            sigmaData(_sigmaData),
+            qmData(_qmData),
+            qlData(_qlData),
+            qrData(_qrData),
+            qoData(_qoData),
+            qcData(_qcData),
+            polData(_polData)
         {
             fft = new FFT<typename Engine::Fr>(domainSize*4);
             internalWitness = new typename Engine::FrElement[nAdditions];
+            // LOG_DEBUG("Fr.w");
+            E.fr.fromString(frw[28], "19103219067921713944291392827692070036145651957329286315305642004821462161904");
+            for (int i = 27; i >= 0; i--) {
+                E.fr.square(frw[i], frw[i+1]);
+                // LOG_DEBUG(E.fr.toString(frw[i]).c_str());
+            }
+
+            typename Engine::FrElement minus_1;
+            typename Engine::FrElement minus_2;
+            typename Engine::FrElement zero = E.fr.zero();
+            typename Engine::FrElement one = E.fr.one();
+            typename Engine::FrElement two;
+            typename Engine::FrElement tmp;
+            E.fr.sub(minus_1, zero, one);
+            E.fr.sub(minus_2, minus_1, one);
+
+            Z1[0] = E.fr.zero();
+            E.fr.add(Z1[1], minus_1, frw[2]);
+            Z1[2] = minus_2;
+            E.fr.sub(Z1[3], minus_1, frw[2]);
+
+            Z2[0] = E.fr.zero();
+            E.fr.mul(tmp, minus_2, frw[2]);
+            Z2[1] = tmp;
+            E.fr.fromString(Z2[2], "4");
+            E.fr.sub(Z2[3], zero, tmp);
+
+            E.fr.fromString(two, "2");
+
+            E.fr.mul(tmp, two, frw[2]);
+            Z3[0] = E.fr.zero();
+            E.fr.add(Z3[1], two, tmp);
+            E.fr.fromString(Z3[2], "-8");
+            E.fr.sub(Z3[3], two, tmp);
+
+            LOG_DEBUG("Z3");
+            LOG_DEBUG(E.fr.toString(Z3[0]).c_str());
+            LOG_DEBUG(E.fr.toString(Z3[1]).c_str());
+            LOG_DEBUG(E.fr.toString(Z3[2]).c_str());
+            LOG_DEBUG(E.fr.toString(Z3[3]).c_str());
         };
 
         ~Prover() {
@@ -317,7 +381,13 @@ namespace Plonk {
         void *PTau,
         mpz_t _k1,
         mpz_t _k2,
-        void *sigmaData
+        void *sigmaData,
+        void *qmData,
+        void *qlData,
+        void *qrData,
+        void *qoData,
+        void *qcData,
+        void *polData
     ) {
         typename Engine::FrElement k1;
         typename Engine::FrElement k2;
@@ -348,7 +418,13 @@ namespace Plonk {
             (typename Engine::G1PointAffine *)PTau,
             k1,
             k2,
-            (typename Engine::FrElement *)sigmaData
+            (typename Engine::FrElement *)sigmaData,
+            (typename Engine::FrElement *)qmData,
+            (typename Engine::FrElement *)qlData,
+            (typename Engine::FrElement *)qrData,
+            (typename Engine::FrElement *)qoData,
+            (typename Engine::FrElement *)qcData,
+            (typename Engine::FrElement *)polData
         );
         return std::unique_ptr< Prover<Engine> >(p);
     }

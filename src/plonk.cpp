@@ -166,14 +166,6 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
 
     typename Engine::FrElement *sigmaBuff = new typename Engine::FrElement[domainSize*12];
 
-    typename Engine::FrElement frw[29];
-    LOG_DEBUG("Fr.w");
-    E.fr.fromString(frw[28], "19103219067921713944291392827692070036145651957329286315305642004821462161904");
-    for (int i = 27; i >= 0; i--) {
-        E.fr.square(frw[i], frw[i+1]);
-        LOG_DEBUG(E.fr.toString(frw[i]).c_str());
-    }
-
     int o = domainSize;
     for (int i = 0; i < domainSize*4; i++) {
         sigmaBuff[i] = sigmaData[o+i];
@@ -275,6 +267,35 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
     to4T(Z, domainSize, {b[9], b[8], b[7]}, pol_z, Z4);
 
     typename Engine::G1PointAffine proof_Z = expTau(pol_z, domainSize+3);
+
+    typename Engine::FrElement *QM4 = new typename Engine::FrElement[domainSize*4];
+    for (int i = 0; i < domainSize*4; i++) {
+        QM4[i] = qmData[i+domainSize];
+    }
+    typename Engine::FrElement *QL4 = new typename Engine::FrElement[domainSize*4];
+    for (int i = 0; i < domainSize*4; i++) {
+        QL4[i] = qlData[i+domainSize];
+    }
+    typename Engine::FrElement *QR4 = new typename Engine::FrElement[domainSize*4];
+    for (int i = 0; i < domainSize*4; i++) {
+        QR4[i] = qrData[i+domainSize];
+    }
+    typename Engine::FrElement *QO4 = new typename Engine::FrElement[domainSize*4];
+    for (int i = 0; i < domainSize*4; i++) {
+        QO4[i] = qoData[i+domainSize];
+    }
+    typename Engine::FrElement *QC4 = new typename Engine::FrElement[domainSize*4];
+    for (int i = 0; i < domainSize*4; i++) {
+        QC4[i] = qcData[i+domainSize];
+    }
+    LOG_DEBUG("QM4[0]");
+    LOG_DEBUG(E.fr.toString(QM4[0]).c_str());
+    LOG_DEBUG(E.fr.toString(QM4[1]).c_str());
+
+    uint8_t *transcript3 = new uint8_t[64];
+    G1toRprUncompressed(transcript3, 0, proof_Z);
+
+    typename Engine::FrElement alpha = hashToFr(transcript3, 64);
 
 
 /*
