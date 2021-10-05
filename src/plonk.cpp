@@ -132,6 +132,151 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
 
     typename Engine::FrElement beta = hashToFr(transcript1, 64*3);
 
+    uint8_t *transcript2 = new uint8_t[32];
+    FrtoRprBE(transcript2, 0, beta);
+    /*
+    LOG_DEBUG("transcript");
+    LOG_DEBUG(std::to_string((int)transcript2[0]));
+    LOG_DEBUG(std::to_string((int)transcript2[1]));
+    LOG_DEBUG(std::to_string((int)transcript2[2]));
+    LOG_DEBUG(std::to_string((int)transcript2[3]));
+    LOG_DEBUG(std::to_string((int)transcript2[4]));
+    */
+
+    typename Engine::FrElement gamma = hashToFr(transcript2, 32);
+
+    typename Engine::FrElement *numArr = new typename Engine::FrElement[domainSize];
+    typename Engine::FrElement *denArr = new typename Engine::FrElement[domainSize];
+    typename Engine::FrElement *idenArr = new typename Engine::FrElement[domainSize];
+
+    numArr[0] = E.fr.one();
+    denArr[0] = E.fr.one();
+
+    typename Engine::FrElement w = E.fr.one();
+    typename Engine::FrElement tmp1;
+
+    LOG_DEBUG("k1");
+    E.fr.fromMontgomery(k1, k1);
+    LOG_DEBUG(E.fr.toString(k1).c_str());
+    LOG_DEBUG("k2");
+    E.fr.fromMontgomery(k2, k2);
+    LOG_DEBUG(E.fr.toString(k2).c_str());
+
+    int power = log2(domainSize);
+
+    typename Engine::FrElement *sigmaBuff = new typename Engine::FrElement[domainSize*12];
+
+    typename Engine::FrElement frw[29];
+    LOG_DEBUG("Fr.w");
+    E.fr.fromString(frw[28], "19103219067921713944291392827692070036145651957329286315305642004821462161904");
+    for (int i = 27; i >= 0; i--) {
+        E.fr.square(frw[i], frw[i+1]);
+        LOG_DEBUG(E.fr.toString(frw[i]).c_str());
+    }
+
+    int o = domainSize;
+    for (int i = 0; i < domainSize*4; i++) {
+        sigmaBuff[i] = sigmaData[o+i];
+    }
+    o += domainSize*5;
+    for (int i = 0; i < domainSize*4; i++) {
+        sigmaBuff[i+domainSize*4] = sigmaData[o+i];
+    }
+    o += domainSize*5;
+    for (int i = 0; i < domainSize*4; i++) {
+        sigmaBuff[i+domainSize*8] = sigmaData[o+i];
+    }
+
+    LOG_DEBUG("sigma buffer");
+    LOG_DEBUG(E.fr.toString(sigmaBuff[0]).c_str());
+
+    for (int i=0; i<domainSize; i++) {
+    // for (int i=0; i<100; i++) {
+        auto n1 = A[i];
+        E.fr.mul(tmp1, beta, w);
+        E.fr.add( n1, n1, tmp1 );
+        E.fr.add( n1, n1, gamma );
+
+        auto n2 = B[i];
+        E.fr.mul(tmp1, beta, w);
+        E.fr.mul(tmp1, tmp1, k1);
+        E.fr.add(n2, n2, tmp1);
+        E.fr.add(n2, n2, gamma );
+
+        auto n3 = C[i];
+        E.fr.mul(tmp1, beta, w);
+        E.fr.mul(tmp1, tmp1, k2);
+        E.fr.add(n3, n3, tmp1);
+        E.fr.add(n3, n3, gamma );
+
+        typename Engine::FrElement num;
+        E.fr.mul(num, n2, n3);
+        E.fr.mul(num, n1, num);
+
+        auto d1 = A[i];
+        E.fr.mul(tmp1, sigmaBuff[i*4], beta); 
+        E.fr.add(d1, d1, tmp1);
+        E.fr.add(d1, d1, gamma);
+        // LOG_DEBUG("d1");
+        // LOG_DEBUG(E.fr.toString(d1).c_str());
+
+        auto d2 = B[i];
+        E.fr.mul(tmp1, sigmaBuff[(domainSize+i)*4], beta); 
+        E.fr.add(d2, d2, tmp1);
+        E.fr.add(d2, d2, gamma);
+        // LOG_DEBUG("d2");
+        // LOG_DEBUG(E.fr.toString(d2).c_str());
+
+        auto d3 = C[i];
+        E.fr.mul(tmp1, sigmaBuff[(domainSize*2+i)*4], beta); 
+        E.fr.add(d3, d3, tmp1);
+        E.fr.add(d3, d3, gamma);
+        // LOG_DEBUG("d3");
+        // LOG_DEBUG(E.fr.toString(d3).c_str());
+
+        typename Engine::FrElement den;
+        E.fr.mul(den, d2, d3);
+        E.fr.mul(den, d1, den);
+        // LOG_DEBUG("den 1");
+        // LOG_DEBUG(E.fr.toString(den).c_str());
+
+        E.fr.mul(numArr[(i+1) % domainSize], numArr[i], num);
+        E.fr.mul(denArr[(i+1) % domainSize], denArr[i], den);
+
+        E.fr.mul(w, w, frw[power]);
+    }
+
+    LOG_DEBUG("final w");
+    LOG_DEBUG(E.fr.toString(w).c_str());
+
+    LOG_DEBUG("num 0");
+    LOG_DEBUG(E.fr.toString(numArr[0]).c_str());
+    LOG_DEBUG("den 0");
+    LOG_DEBUG(E.fr.toString(denArr[0]).c_str());
+
+    // Invert denominators
+    for (int i = 0; i < domainSize; i++) {
+        E.fr.inv(denArr[i], denArr[i]);
+    }
+    LOG_DEBUG("inv den 0");
+    LOG_DEBUG(E.fr.toString(idenArr[0]).c_str());
+
+    // E.fr.mul(tmp1, denArr[0], idenArr[0]);
+    // LOG_DEBUG("inv check");
+    // LOG_DEBUG(E.fr.toString(tmp1).c_str());
+
+    for (int i=0; i<domainSize; i++) {
+        E.fr.mul(numArr[i], numArr[i], denArr[i]);
+    }
+
+    auto Z = numArr;
+
+    typename Engine::FrElement *pol_z, *Z4;
+    to4T(Z, domainSize, {b[9], b[8], b[7]}, pol_z, Z4);
+
+    typename Engine::G1PointAffine proof_Z = expTau(pol_z, domainSize+3);
+
+
 /*
     LOG_TRACE("Start Initializing a b c A");
     auto a = new typename Engine::FrElement[domainSize];

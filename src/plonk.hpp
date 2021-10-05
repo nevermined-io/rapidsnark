@@ -63,11 +63,15 @@ namespace Plonk {
 
         typename Engine::FrElement *internalWitness;
         typename Engine::FrElement *wtns;
+        typename Engine::FrElement k1;
+        typename Engine::FrElement k2;
 
         uint8_t *additions;
         uint8_t *Amap;
         uint8_t *Bmap;
         uint8_t *Cmap;
+
+        typename Engine::FrElement *sigmaData;
 
         FFT<typename Engine::Fr> *fft;
     public:
@@ -93,7 +97,10 @@ namespace Plonk {
             uint8_t *_aMap,
             uint8_t *_bMap,
             uint8_t *_cMap,
-            typename Engine::G1PointAffine *_PTau
+            typename Engine::G1PointAffine *_PTau,
+            typename Engine::FrElement _k1,
+            typename Engine::FrElement _k2,
+            typename Engine::FrElement *_sigmaData
         ) : 
             E(_E), 
             nVars(_nVars),
@@ -116,7 +123,10 @@ namespace Plonk {
             additions(_additions),
             Amap(_aMap),
             Bmap(_bMap),
-            Cmap(_cMap)
+            Cmap(_cMap),
+            k1(_k1),
+            k2(_k2),
+            sigmaData(_sigmaData)
         {
             fft = new FFT<typename Engine::Fr>(domainSize*4);
             internalWitness = new typename Engine::FrElement[nAdditions];
@@ -182,6 +192,15 @@ namespace Plonk {
 
         }
 
+        void FrtoRprBE(uint8_t *transcript1, int offset, typename Engine::FrElement &p) {
+            typename Engine::FrElement bm;
+            E.fr.fromMontgomery(bm, p);
+            uint8_t *tmp = (uint8_t*)(&bm);
+            for (int i = 0; i < 32; i++) {
+                transcript1[i+offset] = tmp[31-i];
+            }
+        }
+
         typename Engine::G1PointAffine expTau(typename Engine::FrElement *b, int size) {
             typename Engine::FrElement *bm = new typename Engine::FrElement[size];
             for (int i = 0; i < size; i++) {
@@ -211,10 +230,10 @@ namespace Plonk {
 
         void to4T(typename Engine::FrElement *A, uint32_t size, std::vector<typename Engine::FrElement> pz, typename Engine::FrElement* & a1, typename Engine::FrElement* &A4) {
             typename Engine::FrElement *a = new typename Engine::FrElement[2*size];
-            /*
+            
             for (int i = 0; i < size*2; i++) {
                 a[i] = E.fr.zero();
-            }*/
+            }
             for (int i = 0; i < size; i++) {
                 a[i] = A[i];
                 // LOG_DEBUG("hmm");
@@ -295,8 +314,15 @@ namespace Plonk {
         void *amap,
         void *bmap,
         void *cmap,
-        void *PTau
+        void *PTau,
+        mpz_t _k1,
+        mpz_t _k2,
+        void *sigmaData
     ) {
+        typename Engine::FrElement k1;
+        typename Engine::FrElement k2;
+        Engine::engine.fr.fromMpz(k1, _k1);
+        Engine::engine.fr.fromMpz(k2, _k2);
         Prover<Engine> *p = new Prover<Engine>(
             Engine::engine, 
             nVars, 
@@ -319,7 +345,10 @@ namespace Plonk {
             (uint8_t*)amap,
             (uint8_t*)bmap,
             (uint8_t*)cmap,
-            (typename Engine::G1PointAffine *)PTau
+            (typename Engine::G1PointAffine *)PTau,
+            k1,
+            k2,
+            (typename Engine::FrElement *)sigmaData
         );
         return std::unique_ptr< Prover<Engine> >(p);
     }
