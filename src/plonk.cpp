@@ -85,9 +85,9 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
     LOG_DEBUG(E.fr.toString(A[0]).c_str());
 
     // Random elements
-    typename Engine::FrElement *b = new typename Engine::FrElement[10];
+    typename Engine::FrElement *ch_b = new typename Engine::FrElement[10];
     for (int i = 0; i < 10; i++) {
-        randombytes_buf((void *)&(b[i]), n8r);
+        randombytes_buf((void *)&(ch_b[i]), n8r);
         // b[i] = E.fr.random();
     }
 
@@ -99,16 +99,16 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
             aux1 = getWitness(j+i);
             E.fr.add(aux2, aux2, aux1);
         }
-        b[i] = aux2;
-        LOG_DEBUG(E.fr.toString(b[i]).c_str());
+        ch_b[i] = aux2;
+        LOG_DEBUG(E.fr.toString(ch_b[i]).c_str());
     }
 
     typename Engine::FrElement *pol_a, *A4;
-    to4T(A, domainSize, {b[2], b[1]}, pol_a, A4);
+    to4T(A, domainSize, {ch_b[2], ch_b[1]}, pol_a, A4);
     typename Engine::FrElement *pol_b, *B4;
-    to4T(B, domainSize, {b[4], b[3]}, pol_b, B4);
+    to4T(B, domainSize, {ch_b[4], ch_b[3]}, pol_b, B4);
     typename Engine::FrElement *pol_c, *C4;
-    to4T(C, domainSize, {b[6], b[5]}, pol_c, C4);
+    to4T(C, domainSize, {ch_b[6], ch_b[5]}, pol_c, C4);
 
     typename Engine::G1PointAffine proof_A = expTau(pol_a, domainSize+2);
     typename Engine::G1PointAffine proof_B = expTau(pol_b, domainSize+2);
@@ -153,7 +153,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
     denArr[0] = E.fr.one();
 
     typename Engine::FrElement w = E.fr.one();
-    typename Engine::FrElement tmp1;
+    typename Engine::FrElement tmp1, tmp2, tmp3;
 
     LOG_DEBUG("k1");
     E.fr.fromMontgomery(k1, k1);
@@ -264,9 +264,11 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
     auto Z = numArr;
 
     typename Engine::FrElement *pol_z, *Z4;
-    to4T(Z, domainSize, {b[9], b[8], b[7]}, pol_z, Z4);
+    to4T(Z, domainSize, {ch_b[9], ch_b[8], ch_b[7]}, pol_z, Z4);
 
     typename Engine::G1PointAffine proof_Z = expTau(pol_z, domainSize+3);
+
+    // Round 3
 
     typename Engine::FrElement *QM4 = new typename Engine::FrElement[domainSize*4];
     for (int i = 0; i < domainSize*4; i++) {
@@ -296,6 +298,145 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
     G1toRprUncompressed(transcript3, 0, proof_Z);
 
     typename Engine::FrElement alpha = hashToFr(transcript3, 64);
+
+    typename Engine::FrElement *T = new typename Engine::FrElement[domainSize*4];
+    typename Engine::FrElement *Tz = new typename Engine::FrElement[domainSize*4];
+
+    w = E.fr.one();
+
+    for (int i=0; i<domainSize*4; i++) {
+        // if ((i%4096 == 0)&&(logger)) logger.debug(`calculating t ${i}/${zkey.domainSize*4}`);
+
+        typename Engine::FrElement a = A4[i];
+        typename Engine::FrElement b = B4[i];
+        typename Engine::FrElement c = C4[i];
+        typename Engine::FrElement z = Z4[i];
+        typename Engine::FrElement zw = Z4[(i+domainSize*4+4)%(domainSize*4)];
+        typename Engine::FrElement qm = QM4[i];
+        typename Engine::FrElement ql = QL4[i];
+        typename Engine::FrElement qr = QR4[i];
+        typename Engine::FrElement qo = QO4[i];
+        typename Engine::FrElement qc = QC4[i];
+        typename Engine::FrElement s1 = sigmaBuff[i];
+        typename Engine::FrElement s2 = sigmaBuff[i+domainSize*4];
+        typename Engine::FrElement s3 = sigmaBuff[i+domainSize*8];
+
+        typename Engine::FrElement ap, bp, cp, w2, zp, wW, wW2, zWp;
+        E.fr.mul(tmp1, ch_b[1], w);
+        E.fr.add(ap, ch_b[2], tmp1);
+        E.fr.mul(tmp1, ch_b[3], w);
+        E.fr.add(bp, ch_b[4], tmp1);
+        E.fr.mul(tmp1, ch_b[5], w);
+        E.fr.add(cp, ch_b[6], tmp1);
+        E.fr.square(w2, w);
+        E.fr.mul(tmp1, ch_b[7], w2);
+        E.fr.mul(tmp2, ch_b[8], w);
+        E.fr.add(tmp1, tmp1, tmp2);
+        E.fr.add(zp, tmp1, ch_b[9]);
+        E.fr.mul(wW, w, frw[power]);
+        E.fr.square(wW2, wW);
+        E.fr.mul(tmp1, ch_b[7], wW2);
+        E.fr.mul(tmp2, ch_b[8], wW);
+        E.fr.add(tmp3, tmp1, tmp2);
+        E.fr.add(zWp, tmp3, ch_b[9]);
+
+        auto pl = E.fr.zero();
+        for (int j=0; j<nPublic; j++) {
+            E.fr.mul(tmp1, polData[j*5*domainSize+ domainSize+ i], A[j]);
+            E.fr.sub(pl, pl, tmp1);
+        }
+
+        typename Engine::FrElement e1, e1z;
+        mul2(a, b, ap, bp, i%4, e1, e1z);
+        E.fr.mul(e1, e1, qm);
+        E.fr.mul(e1z, e1z, qm);
+
+        E.fr.mul(tmp1, a, ql);
+        E.fr.add(e1, e1, tmp1);
+        E.fr.mul(tmp1, ap, ql);
+        E.fr.add(e1z, e1, tmp1);
+
+        E.fr.mul(tmp1, b, qr);
+        E.fr.add(e1, e1, tmp1);
+        E.fr.mul(tmp1, bp, qr);
+        E.fr.add(e1z, e1z, tmp1);
+
+        E.fr.mul(tmp1, c, qo);
+        E.fr.add(e1, e1, tmp1);
+        E.fr.mul(tmp1, cp, qo);
+        E.fr.add(e1z, e1z, tmp1);
+
+        E.fr.add(e1, e1, pl);
+        E.fr.add(e1, e1, qc);
+
+        typename Engine::FrElement e2, e2z, betaw, e2a, e2b, e2c, e2d;
+        E.fr.mul(betaw, beta, w);
+        e2a =a;
+        E.fr.add(e2a, e2a, betaw);
+        E.fr.add(e2a, e2a, gamma);
+
+        e2b =b;
+        E.fr.mul(tmp1, betaw, k1);
+        E.fr.add(e2b, e2b, tmp1);
+        E.fr.add(e2b, e2b, gamma);
+
+        e2c =c;
+        E.fr.mul(tmp1, betaw, k2);
+        E.fr.add(e2c, e2c, tmp1);
+        E.fr.add(e2c, e2c, gamma);
+
+        e2d = z;
+
+        mul4(e2a, e2b, e2c, e2d, ap, bp, cp, zp, i%4, e2, e2z);
+        E.fr.mul(e2, e2, alpha);
+        E.fr.mul(e2z, e2z, alpha);
+
+        typename Engine::FrElement e3, e3z, e3a, e3b, e3c, e3d;
+        e3a = a;
+        E.fr.mul(tmp1, beta, s1);
+        E.fr.add(e3a, e3a, tmp1);
+        E.fr.add(e3a, e3a, gamma);
+
+        e3b = b;
+        E.fr.mul(tmp1, beta, s2);
+        E.fr.add(e3b, e3b,tmp1);
+        E.fr.add(e3b, e3b, gamma);
+
+        e3c = c;
+        E.fr.mul(tmp1, beta, s3);
+        E.fr.add(e3c, e3c, tmp1);
+        E.fr.add(e3c, e3c, gamma);
+
+        e3d = zw;
+        mul4(e3a, e3b, e3c, e3d, ap, bp, cp, zWp, i%4, e3, e3z);
+
+        E.fr.mul(e3, e3, alpha);
+        E.fr.mul(e3z, e3z, alpha);
+
+        typename Engine::FrElement e4, e4z;
+        tmp1 = E.fr.one();
+        E.fr.sub(e4, z, tmp1);
+        E.fr.mul(e4, e4, polData[domainSize + i]);
+        E.fr.mul(tmp1, alpha, alpha);
+        E.fr.mul(e4, e4, tmp1);
+
+        E.fr.mul(e4z, zp, polData[domainSize + i]);
+        E.fr.mul(tmp1, alpha, alpha);
+        E.fr.mul(e4z, e4z, tmp1);
+
+        typename Engine::FrElement e, ez;
+        E.fr.add(tmp1, e1, e2);
+        E.fr.sub(tmp2, tmp1, e3);
+        E.fr.add(e, tmp2, e4);
+        E.fr.add(tmp1, e1z, e2z);
+        E.fr.sub(tmp2, tmp1, e3z);
+        E.fr.add(ez, tmp2, e4z);
+
+        T[i] = e;
+        Tz[i] = ez;
+
+        E.fr.mul(w, w, frw[power+2]);
+    }
 
 
 /*

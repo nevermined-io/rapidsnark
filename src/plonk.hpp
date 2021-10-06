@@ -202,6 +202,104 @@ namespace Plonk {
 
         std::unique_ptr<Proof<Engine>> prove(typename Engine::FrElement *wtns);
 
+        void mul2(typename Engine::FrElement &a,
+                typename Engine::FrElement &b,
+                typename Engine::FrElement &ap,
+                typename Engine::FrElement &bp,
+                int p,
+                typename Engine::FrElement &r,
+                typename Engine::FrElement &rz
+                ) {
+            
+            typename Engine::FrElement a_b, a_bp, ap_b, ap_bp, a0, a1;
+            E.fr.mul(a_b,a,b);
+            E.fr.mul(a_bp,a,bp);
+            E.fr.mul(ap_b,ap,b);
+            E.fr.mul(ap_bp,ap,bp);
+
+            r = a_b;
+
+            E.fr.add(a0, a_bp, ap_b);
+
+            a1 = ap_bp;
+
+            rz = a0;
+            if (p > 0) {
+                E.fr.mul(a0, Z1[p], a1);
+                E.fr.add(rz, rz, a0);
+            }
+        }
+
+        void mul4(typename Engine::FrElement &a,
+                typename Engine::FrElement &b,
+                typename Engine::FrElement &c,
+                typename Engine::FrElement &d,
+                typename Engine::FrElement &ap,
+                typename Engine::FrElement &bp,
+                typename Engine::FrElement &cp,
+                typename Engine::FrElement &dp,
+                int p,
+                typename Engine::FrElement &r,
+                typename Engine::FrElement &rz
+                ) {
+
+            
+            typename Engine::FrElement a_b, a_bp, ap_b, ap_bp, a0, a1, a2, a3;
+            typename Engine::FrElement c_d, c_dp, cp_d, cp_dp, tmp;
+            E.fr.mul(a_b,a,b);
+            E.fr.mul(a_bp,a,bp);
+            E.fr.mul(ap_b,ap,b);
+            E.fr.mul(ap_bp,ap,bp);
+
+            E.fr.mul(c_d,c,d);
+            E.fr.mul(c_dp,c,dp);
+            E.fr.mul(cp_d,cp,d);
+            E.fr.mul(cp_dp,cp,dp);
+
+            E.fr.mul(r, a_b, c_d);
+
+            E.fr.mul(a0, ap_b, c_d);
+            E.fr.mul(tmp, a_bp, c_d);
+            E.fr.add(a0, a0, tmp);
+            E.fr.mul(tmp, a_b, cp_d);
+            E.fr.add(a0, a0, tmp);
+            E.fr.mul(tmp, a_b, c_dp);
+            E.fr.add(a0, a0, tmp);
+
+            E.fr.mul(a1, ap_bp, c_d);
+            E.fr.mul(tmp,ap_b, cp_d);
+            E.fr.add(a1, a1, tmp);
+            E.fr.mul(tmp,ap_b, c_dp);
+            E.fr.add(a1, a1, tmp);
+            E.fr.mul(tmp,a_bp, cp_d);
+            E.fr.add(a1, a1, tmp);
+            E.fr.mul(tmp,a_bp, c_dp);
+            E.fr.add(a1, a1, tmp);
+            E.fr.mul(tmp,a_b, cp_dp);
+            E.fr.add(a1, a1, tmp);
+
+            E.fr.mul(a2, a_bp, cp_dp);
+            E.fr.mul(tmp,ap_b, cp_dp);
+            E.fr.add(a2, a2, tmp);
+            E.fr.mul(tmp,ap_bp, c_dp);
+            E.fr.add(a2, a2, tmp);
+            E.fr.mul(tmp,ap_bp, cp_d);
+            E.fr.add(a2, a2, tmp);
+
+            E.fr.mul(a3, ap_bp, cp_dp);
+
+            rz = a0;
+            if (p > 0) {
+                E.fr.mul(tmp, Z1[p], a1);
+                E.fr.add(rz, rz, tmp);
+                E.fr.mul(tmp, Z2[p], a2);
+                E.fr.add(rz, rz, tmp);
+                E.fr.mul(tmp, Z3[p], a3);
+                E.fr.add(rz, rz, tmp);
+            }
+
+        }
+
         typename Engine::FrElement hashToFr(uint8_t *transcript, int size) {
             uint8_t out[32];
             sha3_HashBuffer(256, SHA3_FLAGS_KECCAK, transcript, size, out, sizeof(out));
