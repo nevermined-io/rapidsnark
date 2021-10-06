@@ -266,6 +266,10 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
     typename Engine::FrElement *pol_z, *Z4;
     to4T(Z, domainSize, {ch_b[9], ch_b[8], ch_b[7]}, pol_z, Z4);
 
+    for (int i = 0; i < 10; i++) {
+        std::cerr << "Z4[" << i << "] = " << E.fr.toString(Z4[i]) << "\n";
+    }
+
     typename Engine::G1PointAffine proof_Z = expTau(pol_z, domainSize+3);
 
     // Round 3
@@ -312,6 +316,10 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
         typename Engine::FrElement c = C4[i];
         typename Engine::FrElement z = Z4[i];
         typename Engine::FrElement zw = Z4[(i+domainSize*4+4)%(domainSize*4)];
+        if (i == 0) {
+            std::cerr << "index " << (i+domainSize*4+4)%(domainSize*4) << "\n";
+            std::cerr << "zw " << E.fr.toString(zw) << "\n";
+        }
         typename Engine::FrElement qm = QM4[i];
         typename Engine::FrElement ql = QL4[i];
         typename Engine::FrElement qr = QR4[i];
@@ -345,16 +353,26 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
             E.fr.mul(tmp1, polData[j*5*domainSize+ domainSize+ i], A[j]);
             E.fr.sub(pl, pl, tmp1);
         }
+        if (i == 0) {
+            std::cerr << "pl " << E.fr.toString(pl) << "\n";
+        }
 
         typename Engine::FrElement e1, e1z;
         mul2(a, b, ap, bp, i%4, e1, e1z);
         E.fr.mul(e1, e1, qm);
         E.fr.mul(e1z, e1z, qm);
 
+        if (i == 0) {
+            std::cerr << "e1 " << E.fr.toString(e1) << "\n";
+            std::cerr << "e1z " << E.fr.toString(e1z) << "\n";
+            std::cerr << "ql " << E.fr.toString(ql) << "\n";
+            std::cerr << "a " << E.fr.toString(a) << "\n";
+            std::cerr << "ap " << E.fr.toString(ap) << "\n";
+        }
         E.fr.mul(tmp1, a, ql);
         E.fr.add(e1, e1, tmp1);
         E.fr.mul(tmp1, ap, ql);
-        E.fr.add(e1z, e1, tmp1);
+        E.fr.add(e1z, e1z, tmp1);
 
         E.fr.mul(tmp1, b, qr);
         E.fr.add(e1, e1, tmp1);
@@ -369,6 +387,10 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
         E.fr.add(e1, e1, pl);
         E.fr.add(e1, e1, qc);
 
+        if (i == 0) {
+            std::cerr << "e1 " << E.fr.toString(e1) << "\n";
+            std::cerr << "e1z " << E.fr.toString(e1z) << "\n";
+        }
         typename Engine::FrElement e2, e2z, betaw, e2a, e2b, e2c, e2d;
         E.fr.mul(betaw, beta, w);
         e2a =a;
@@ -388,6 +410,10 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
         e2d = z;
 
         mul4(e2a, e2b, e2c, e2d, ap, bp, cp, zp, i%4, e2, e2z);
+        if (i == 0) {
+            std::cerr << "e2 " << E.fr.toString(e2) << "\n";
+            std::cerr << "e2z " << E.fr.toString(e2z) << "\n";
+        }
         E.fr.mul(e2, e2, alpha);
         E.fr.mul(e2z, e2z, alpha);
 
@@ -408,7 +434,18 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
         E.fr.add(e3c, e3c, gamma);
 
         e3d = zw;
+        if (i == 0) {
+            std::cerr << "e3a " << E.fr.toString(e3a) << "\n";
+            std::cerr << "e3b " << E.fr.toString(e3b) << "\n";
+            std::cerr << "e3c " << E.fr.toString(e3c) << "\n";
+            std::cerr << "e3d " << E.fr.toString(e3d) << "\n";
+            std::cerr << "zWp " << E.fr.toString(zWp) << "\n";
+        }
         mul4(e3a, e3b, e3c, e3d, ap, bp, cp, zWp, i%4, e3, e3z);
+        if (i == 0) {
+            std::cerr << "e3 " << E.fr.toString(e3) << "\n";
+            std::cerr << "e3z " << E.fr.toString(e3z) << "\n";
+        }
 
         E.fr.mul(e3, e3, alpha);
         E.fr.mul(e3z, e3z, alpha);
@@ -437,6 +474,12 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
 
         E.fr.mul(w, w, frw[power+2]);
     }
+
+    std::cerr << "final w " << E.fr.toString(w) << "\n";
+    std::cerr << "T[1001] " << E.fr.toString(T[1001]) << "\n";
+    std::cerr << "Tz[1001] " << E.fr.toString(Tz[1001]) << "\n";
+
+    
 
 
 /*

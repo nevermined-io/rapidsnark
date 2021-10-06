@@ -413,6 +413,9 @@ namespace Plonk {
             LOG_DEBUG(E.fr.toString(a[0]).c_str());
 
             typename Engine::FrElement *a4 = new typename Engine::FrElement[4*size];
+            for (int i = 0; i < size*4; i++) {
+                a4[i] = E.fr.zero();
+            }
             for (int i = 0; i < size*2; i++) {
                 a4[i] = a[i];
             }
@@ -437,10 +440,10 @@ namespace Plonk {
             LOG_DEBUG("nAdditions");
             LOG_DEBUG(std::to_string(nAdditions));
             */
-            fft->fft(a4, size*2);
+            fft->fft(a4, size*4);
             A4 = a4;
             LOG_DEBUG("A4");
-            LOG_DEBUG(E.fr.toString(A4[0]).c_str());
+            LOG_DEBUG(E.fr.toString(A4[1]).c_str());
         }
 
         typename Engine::FrElement& getWitness(uint32_t idx) {
