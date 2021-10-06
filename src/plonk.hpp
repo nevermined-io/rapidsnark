@@ -363,6 +363,18 @@ namespace Plonk {
             }
         }
 
+        typename Engine::FrElement evalPol(typename Engine::FrElement *P, typename Engine::FrElement &x, int n) {
+            if (n == 0) return E.fr.zero();
+            auto res = P[n-1];
+            for (int i=n-2; i>=0; i--) {
+                E.fr.mul(res, res, x);
+                E.fr.add(res, res, P[i]);
+            }
+            std::cerr << "evalpol " << n << " res " << E.fr.toString(res) << "\n";
+            return res;
+        }
+
+
         typename Engine::G1PointAffine expTau(typename Engine::FrElement *b, int size) {
             typename Engine::FrElement *bm = new typename Engine::FrElement[size];
             for (int i = 0; i < size; i++) {

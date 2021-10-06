@@ -520,6 +520,112 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
     auto proof_T2 = expTau(t+domainSize, domainSize);
     auto proof_T3 = expTau(t+domainSize*2, domainSize+6);
 
+    // Round 4
+    typename Engine::FrElement *pol_qm = qmData;
+    typename Engine::FrElement *pol_ql = qlData;
+    typename Engine::FrElement *pol_qr = qrData;
+    typename Engine::FrElement *pol_qo = qoData;
+    typename Engine::FrElement *pol_qc = qcData;
+    typename Engine::FrElement *pol_s1 = sigmaData + 0*domainSize;
+    typename Engine::FrElement *pol_s2 = sigmaData + 5*domainSize;
+    typename Engine::FrElement *pol_s3 = sigmaData + 10*domainSize;
+
+    uint8_t *transcript4 = new uint8_t[64*3];
+    G1toRprUncompressed(transcript4, 0, proof_T1);
+    G1toRprUncompressed(transcript4, 64, proof_T2);
+    G1toRprUncompressed(transcript4, 128, proof_T3);
+    auto xi = hashToFr(transcript4, 64*3);
+
+    auto proof_eval_a = evalPol(pol_a, xi, domainSize+2);
+    auto proof_eval_b = evalPol(pol_b, xi, domainSize+2);
+    auto proof_eval_c = evalPol(pol_c, xi, domainSize+2);
+    auto proof_eval_s1 = evalPol(pol_s1, xi, domainSize);
+    auto proof_eval_s2 = evalPol(pol_s2, xi, domainSize);
+    auto proof_eval_t = evalPol(pol_t, xi, domainSize*3+6);
+    E.fr.mul(tmp1, xi, frw[power]);
+    auto proof_eval_zw = evalPol(pol_z, tmp1, domainSize+3);
+
+    typename Engine::FrElement betaxi, coef_ab;
+    E.fr.mul(coef_ab, proof_eval_a, proof_eval_b);
+    
+    E.fr.mul(betaxi, beta, xi);
+
+    auto e2a = proof_eval_a;
+    E.fr.add(e2a, e2a, betaxi);
+    E.fr.add(e2a, e2a, gamma);
+
+    auto e2b = proof_eval_b;
+    E.fr.mul(tmp1, betaxi, k1);
+    E.fr.add(e2b, e2b, tmp1);
+    E.fr.add(e2b, e2b, gamma);
+
+    auto e2c = proof_eval_c;
+    E.fr.mul(tmp1, betaxi, k2);
+    E.fr.add(e2c, e2c, tmp1);
+    E.fr.add(e2c, e2c, gamma);
+
+    typename Engine::FrElement e2;
+    E.fr.mul(tmp1, e2a, e2b);
+    E.fr.mul(tmp1, tmp1, e2c);
+    E.fr.mul(e2, tmp1, alpha);
+
+    auto e3a = proof_eval_a;
+    E.fr.mul(tmp1, beta, proof_eval_s1);
+    E.fr.add(e3a, e3a, tmp1);
+    E.fr.add(e3a, e3a, gamma);
+
+    auto e3b = proof_eval_b;
+    E.fr.mul(tmp1, beta, proof_eval_s2);
+    E.fr.add(e3b, e3b, tmp1);
+    E.fr.add(e3b, e3b, gamma);
+
+    typename Engine::FrElement e3;
+    E.fr.mul(e3, e3a, e3b);
+    E.fr.mul(e3, e3, beta);
+    E.fr.mul(e3, e3, proof_eval_zw);
+    E.fr.mul(e3, e3, alpha);
+
+    auto xim = xi;
+    for (int i=0; i<power; i++) E.fr.mul(xim, xim, xim);
+    typename Engine::FrElement eval_l1, e4, coefz, coefs3, size;
+    auto one = E.fr.one();
+    E.fr.sub(tmp1, xi, one);
+    E.fr.sub(tmp2, xim, one);
+    E.fr.fromUI(size, domainSize);
+    E.fr.mul(tmp3, tmp1, size);
+    E.fr.div(eval_l1, tmp2, tmp3);
+
+    E.fr.mul(tmp1, alpha, alpha);
+    E.fr.mul(e4, eval_l1, tmp1);
+
+    coefs3 = e3;
+    E.fr.add(coefz, e2, e4);
+
+    typename Engine::FrElement *pol_r = new typename Engine::FrElement[domainSize*3];
+
+    typename Engine::FrElement v;
+    for (int i = 0; i<domainSize+3; i++) {
+        E.fr.mul(v, coefz, pol_z[i]);
+        if (i<domainSize) {
+            E.fr.mul(tmp1, coef_ab, pol_qm[i]);
+            E.fr.add(v, v, tmp1);
+            E.fr.mul(tmp1, proof_eval_a, pol_ql[i]);
+            E.fr.add(v, v, tmp1);
+            E.fr.mul(tmp1, proof_eval_b, pol_qr[i]);
+            E.fr.add(v, v, tmp1);
+            E.fr.mul(tmp1, proof_eval_c, pol_qo[i]);
+            E.fr.add(v, v, tmp1);
+            E.fr.add(v, v, pol_qc[i]);
+            E.fr.mul(tmp1, coefs3, pol_s3[i]);
+            E.fr.sub(v, v, tmp1);
+        }
+        pol_r[i] = v;
+    }
+
+    auto proof_eval_r = evalPol(pol_r, xi, domainSize+3);
+
+    // Round 5
+
 
 /*
     LOG_TRACE("Start Initializing a b c A");
