@@ -363,6 +363,27 @@ namespace Plonk {
             }
         }
 
+        void divPol1(typename Engine::FrElement *P, typename Engine::FrElement &d, int n, typename Engine::FrElement *&res) {
+            res = new typename Engine::FrElement[n];
+            res[n-1] = E.fr.zero();
+            res[n-2] = P[n-1];
+            for (int i=n-3; i>=0; i--) {
+                E.fr.mul(res[i], d, res[i+1]);
+                E.fr.add(res[i], res[i], P[i+1]);
+            }
+            /*
+            if (!Fr.eq(
+                P.slice(0, n8r),
+                Fr.mul(
+                    Fr.neg(d),
+                    res.slice(0, n8r)
+                )
+            )) {
+                throw new Error("Polinomial does not divide");
+            }
+            */
+        }
+
         typename Engine::FrElement evalPol(typename Engine::FrElement *P, typename Engine::FrElement &x, int n) {
             if (n == 0) return E.fr.zero();
             auto res = P[n-1];

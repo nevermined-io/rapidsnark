@@ -625,213 +625,93 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
     auto proof_eval_r = evalPol(pol_r, xi, domainSize+3);
 
     // Round 5
+    int n8r = 32;
+    uint8_t *transcript5 = new uint8_t[32*7];
+    FrtoRprBE(transcript5, 0, proof_eval_a);
+    FrtoRprBE(transcript5, n8r, proof_eval_b);
+    FrtoRprBE(transcript5, n8r*2, proof_eval_c);
+    FrtoRprBE(transcript5, n8r*3, proof_eval_s1);
+    FrtoRprBE(transcript5, n8r*4, proof_eval_s2);
+    FrtoRprBE(transcript5, n8r*5, proof_eval_zw);
+    FrtoRprBE(transcript5, n8r*6, proof_eval_r);
+    typename Engine::FrElement *ch_v = new typename Engine::FrElement[7];
+    ch_v[1] = hashToFr(transcript5, 32*7);
 
-
-/*
-    LOG_TRACE("Start Initializing a b c A");
-    auto a = new typename Engine::FrElement[domainSize];
-    auto b = new typename Engine::FrElement[domainSize];
-    auto c = new typename Engine::FrElement[domainSize];
-
-    #pragma omp parallel for
-    for (u_int32_t i=0; i<domainSize; i++) {
-        E.fr.copy(a[i], E.fr.zero());
-        E.fr.copy(b[i], E.fr.zero());
+    for (int i=2; i<=6; i++ ) {
+        E.fr.mul(ch_v[i], ch_v[i-1], ch_v[1]);
     }
 
-    LOG_TRACE("Processing coefs");
-    #define NLOCKS 1024
-    omp_lock_t locks[NLOCKS];
-    for (int i=0; i<NLOCKS; i++) omp_init_lock(&locks[i]);
-    #pragma omp parallel for 
-    for (u_int64_t i=0; i<nCoefs; i++) {
-        typename Engine::FrElement *ab = (coefs[i].m == 0) ? a : b;
-        typename Engine::FrElement aux;
+    typename Engine::FrElement *pol_wxi = new typename Engine::FrElement[domainSize+6];
+    typename Engine::FrElement xi2m;
 
-        E.fr.mul(
-            aux,
-            wtns[coefs[i].s],
-            coefs[i].coef
-        );
+    E.fr.mul(xi2m, xim, xim);
 
-        omp_set_lock(&locks[coefs[i].c % NLOCKS]);
-        E.fr.add(
-            ab[coefs[i].c],
-            ab[coefs[i].c],
-            aux
-        );
-        omp_unset_lock(&locks[coefs[i].c % NLOCKS]);
+    for (int i=0; i<domainSize+6; i++) {
+        w = E.fr.zero();
+        E.fr.mul(tmp1, xi2m, pol_t[domainSize*2+i]);
+        E.fr.add(w, w, tmp1);
+
+        if (i<domainSize+3) {
+            E.fr.mul(tmp1, ch_v[1],  pol_r[i]);
+            E.fr.add(w, w, tmp1);
+        }
+
+        if (i<domainSize+2) {
+            E.fr.mul(tmp1, ch_v[2],  pol_a[i]);
+            E.fr.add(w, w, tmp1);
+            E.fr.mul(tmp1, ch_v[3],  pol_b[i]);
+            E.fr.add(w, w, tmp1);
+            E.fr.mul(tmp1, ch_v[4],  pol_c[i]);
+            E.fr.add(w, w, tmp1);
+        }
+        
+        if (i<domainSize) {
+            E.fr.add(w, w, pol_t[i]);
+            E.fr.mul(tmp1, xim,  pol_t[domainSize+i]);
+            E.fr.add(w, w, tmp1);
+            E.fr.mul(tmp1, ch_v[5],  pol_s1[i]);
+            E.fr.add(w, w, tmp1);
+            E.fr.mul(tmp1, ch_v[6],  pol_s2[i]);
+            E.fr.add(w, w, tmp1);
+        }
+
+        pol_wxi[i] = w;
     }
-    for (int i=0; i<NLOCKS; i++) omp_destroy_lock(&locks[i]);
 
+    auto w0 = pol_wxi[0];
+    E.fr.sub(w0, w0, proof_eval_t);
+    E.fr.mul(tmp1, ch_v[1], proof_eval_r);
+    E.fr.sub(w0, w0, tmp1);
+    E.fr.mul(tmp1, ch_v[2], proof_eval_a);
+    E.fr.sub(w0, w0, tmp1);
+    E.fr.mul(tmp1, ch_v[3], proof_eval_b);
+    E.fr.sub(w0, w0, tmp1);
+    E.fr.mul(tmp1, ch_v[4], proof_eval_c);
+    E.fr.sub(w0, w0, tmp1);
+    E.fr.mul(tmp1, ch_v[5], proof_eval_s1);
+    E.fr.sub(w0, w0, tmp1);
+    E.fr.mul(tmp1, ch_v[6], proof_eval_s2);
+    E.fr.sub(w0, w0, tmp1);
+    pol_wxi[0] = w0;
 
-    LOG_TRACE("Calculating c");
-    #pragma omp parallel for
-    for (u_int32_t i=0; i<domainSize; i++) {
-        E.fr.mul(
-            c[i],
-            a[i],
-            b[i]
-        );
+    typename Engine::FrElement *pol_wxi_;
+    divPol1(pol_wxi, xi, domainSize+6, pol_wxi_);
+
+    auto proof_Wxi = expTau(pol_wxi_, domainSize+6);
+
+    typename Engine::FrElement *pol_wxiw = new typename Engine::FrElement[domainSize+3];
+    for (int i=0; i<domainSize+3; i++) {
+        pol_wxiw[i] = pol_z[i];
     }
+    w0 = pol_wxiw[0];
+    E.fr.sub(w0, w0, proof_eval_zw);
+    pol_wxiw[0] = w0;
 
-    LOG_TRACE("Initializing fft");
-    u_int32_t domainPower = fft->log2(domainSize);
-
-    LOG_TRACE("Start iFFT A");
-    fft->ifft(a, domainSize);
-    LOG_TRACE("a After ifft:");
-    LOG_DEBUG(E.fr.toString(a[0]).c_str());
-    LOG_DEBUG(E.fr.toString(a[1]).c_str());
-    LOG_TRACE("Start Shift A");
-    #pragma omp parallel for
-    for (u_int64_t i=0; i<domainSize; i++) {
-        E.fr.mul(a[i], a[i], fft->root(domainPower+1, i));
-    }
-    LOG_TRACE("a After shift:");
-    LOG_DEBUG(E.fr.toString(a[0]).c_str());
-    LOG_DEBUG(E.fr.toString(a[1]).c_str());
-    LOG_TRACE("Start FFT A");
-    fft->fft(a, domainSize);
-    LOG_TRACE("a After fft:");
-    LOG_DEBUG(E.fr.toString(a[0]).c_str());
-    LOG_DEBUG(E.fr.toString(a[1]).c_str());
-    LOG_TRACE("Start iFFT B");
-    fft->ifft(b, domainSize);
-    LOG_TRACE("b After ifft:");
-    LOG_DEBUG(E.fr.toString(b[0]).c_str());
-    LOG_DEBUG(E.fr.toString(b[1]).c_str());
-    LOG_TRACE("Start Shift B");
-    #pragma omp parallel for
-    for (u_int64_t i=0; i<domainSize; i++) {
-        E.fr.mul(b[i], b[i], fft->root(domainPower+1, i));
-    }
-    LOG_TRACE("b After shift:");
-    LOG_DEBUG(E.fr.toString(b[0]).c_str());
-    LOG_DEBUG(E.fr.toString(b[1]).c_str());
-    LOG_TRACE("Start FFT B");
-    fft->fft(b, domainSize);
-    LOG_TRACE("b After fft:");
-    LOG_DEBUG(E.fr.toString(b[0]).c_str());
-    LOG_DEBUG(E.fr.toString(b[1]).c_str());
-
-    LOG_TRACE("Start iFFT C");
-    fft->ifft(c, domainSize);
-    LOG_TRACE("c After ifft:");
-    LOG_DEBUG(E.fr.toString(c[0]).c_str());
-    LOG_DEBUG(E.fr.toString(c[1]).c_str());
-    LOG_TRACE("Start Shift C");
-    #pragma omp parallel for
-    for (u_int64_t i=0; i<domainSize; i++) {
-        E.fr.mul(c[i], c[i], fft->root(domainPower+1, i));
-    }
-    LOG_TRACE("c After shift:");
-    LOG_DEBUG(E.fr.toString(c[0]).c_str());
-    LOG_DEBUG(E.fr.toString(c[1]).c_str());
-    LOG_TRACE("Start FFT C");
-    fft->fft(c, domainSize);
-    LOG_TRACE("c After fft:");
-    LOG_DEBUG(E.fr.toString(c[0]).c_str());
-    LOG_DEBUG(E.fr.toString(c[1]).c_str());
-
-    LOG_TRACE("Start ABC");
-    #pragma omp parallel for
-    for (u_int64_t i=0; i<domainSize; i++) {
-        E.fr.mul(a[i], a[i], b[i]);
-        E.fr.sub(a[i], a[i], c[i]);
-        E.fr.fromMontgomery(a[i], a[i]);
-    }
-    LOG_TRACE("abc:");
-    LOG_DEBUG(E.fr.toString(a[0]).c_str());
-    LOG_DEBUG(E.fr.toString(a[1]).c_str());
-
-    delete b;
-    delete c;
-
-    LOG_TRACE("Start Multiexp H");
-    typename Engine::G1Point pih;
-    E.g1.multiMulByScalar(pih, pointsH, (uint8_t *)a, sizeof(a[0]), domainSize);
-    std::ostringstream ss1;
-    ss1 << "pih: " << E.g1.toString(pih);
-    LOG_DEBUG(ss1);
-
-    delete a;
-
-    LOG_TRACE("Start Multiexp A");
-    uint32_t sW = sizeof(wtns[0]);
-    typename Engine::G1Point pi_a;
-    E.g1.multiMulByScalar(pi_a, pointsA, (uint8_t *)wtns, sW, nVars);
-    std::ostringstream ss2;
-    ss2 << "pi_a: " << E.g1.toString(pi_a);
-    LOG_DEBUG(ss2);
-
-    LOG_TRACE("Start Multiexp B1");
-    typename Engine::G1Point pib1;
-    E.g1.multiMulByScalar(pib1, pointsB1, (uint8_t *)wtns, sW, nVars);
-    std::ostringstream ss3;
-    ss3 << "pib1: " << E.g1.toString(pib1);
-    LOG_DEBUG(ss3);
-
-    LOG_TRACE("Start Multiexp B2");
-    typename Engine::G2Point pi_b;
-    E.g2.multiMulByScalar(pi_b, pointsB2, (uint8_t *)wtns, sW, nVars);
-    std::ostringstream ss4;
-    ss4 << "pi_b: " << E.g2.toString(pi_b);
-    LOG_DEBUG(ss4);
-
-    LOG_TRACE("Start Multiexp C");
-    typename Engine::G1Point pi_c;
-    E.g1.multiMulByScalar(pi_c, pointsC, (uint8_t *)((uint64_t)wtns + (nPublic +1)*sW), sW, nVars-nPublic-1);
-    std::ostringstream ss5;
-    ss5 << "pi_c: " << E.g1.toString(pi_c);
-    LOG_DEBUG(ss5);
-
-    typename Engine::FrElement r;
-    typename Engine::FrElement s;
-    typename Engine::FrElement rs;
-
-    E.fr.copy(r, E.fr.zero());
-    E.fr.copy(s, E.fr.zero());
-
-    randombytes_buf((void *)&(r.v[0]), sizeof(r)-1);
-    randombytes_buf((void *)&(s.v[0]), sizeof(s)-1);
-
-    typename Engine::G1Point p1;
-    typename Engine::G2Point p2;
-
-    E.g1.add(pi_a, pi_a, vk_alpha1);
-    E.g1.mulByScalar(p1, vk_delta1, (uint8_t *)&r, sizeof(r));
-    E.g1.add(pi_a, pi_a, p1);
-
-    E.g2.add(pi_b, pi_b, vk_beta2);
-    E.g2.mulByScalar(p2, vk_delta2, (uint8_t *)&s, sizeof(s));
-    E.g2.add(pi_b, pi_b, p2);
-
-    E.g1.add(pib1, pib1, vk_beta1);
-    E.g1.mulByScalar(p1, vk_delta1, (uint8_t *)&s, sizeof(s));
-    E.g1.add(pib1, pib1, p1);
-
-    E.g1.add(pi_c, pi_c, pih);
-
-    E.g1.mulByScalar(p1, pi_a, (uint8_t *)&s, sizeof(s));
-    E.g1.add(pi_c, pi_c, p1);
-
-    E.g1.mulByScalar(p1, pib1, (uint8_t *)&r, sizeof(r));
-    E.g1.add(pi_c, pi_c, p1);
-
-    E.fr.mul(rs, r, s);
-    E.fr.toMontgomery(rs, rs);
-
-    E.g1.mulByScalar(p1, vk_delta1, (uint8_t *)&rs, sizeof(rs));
-    E.g1.sub(pi_c, pi_c, p1);
-
-    */
+    typename Engine::FrElement *pol_wxiw_;
+    E.fr.mul(tmp1, xi, frw[power]);
+    divPol1(pol_wxiw, tmp1, domainSize+3, pol_wxiw_);
+    auto proof_Wxiw = expTau(pol_wxiw_, domainSize+3);
     Proof<Engine> *p = new Proof<Engine>(Engine::engine);
-    /*
-    E.g1.copy(p->A, pi_a);
-    E.g2.copy(p->B, pi_b);
-    E.g1.copy(p->C, pi_c);
-    */
 
     return std::unique_ptr<Proof<Engine>>(p);
 }
