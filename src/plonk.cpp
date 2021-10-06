@@ -479,7 +479,46 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
     std::cerr << "T[1001] " << E.fr.toString(T[1001]) << "\n";
     std::cerr << "Tz[1001] " << E.fr.toString(Tz[1001]) << "\n";
 
-    
+    fft->ifft(T, domainSize*4);
+    typename Engine::FrElement *t = T;
+    std::cerr << "t[1001] " << E.fr.toString(t[1001]) << "\n";
+
+    // dividing T/Z    
+    for (int i=0; i<domainSize; i++) {
+        E.fr.neg(t[i], t[i]);
+    }
+
+    for (int i=domainSize; i<domainSize*4; i++) {
+        E.fr.sub(t[i], t[i-domainSize], t[i]);
+        /*
+        if (i > (zkey.domainSize*3 -4) ) {
+            if (!Fr.isZero(a)) {
+                throw new Error("T Polynomial is not divisible");
+            }
+        }*/
+    }
+    std::cerr << "t[1001+size] " << E.fr.toString(t[1001+domainSize]) << "\n";
+
+    fft->ifft(Tz, domainSize*4);
+    typename Engine::FrElement *tz = Tz;
+    for (int i=0; i<domainSize*4; i++) {
+        // auto a = tz[i];
+        if (i > domainSize*3 +5) {
+            /*
+            if (!Fr.isZero(a)) {
+                throw new Error("Tz Polynomial is not well calculated");
+            }*/
+        } else {
+            E.fr.add(t[i], t[i], tz[i]);
+        }
+    }
+    std::cerr << "t[1001+size] " << E.fr.toString(t[1001+domainSize]) << "\n";
+
+    typename Engine::FrElement *pol_t = t; // size: domainSize*3+6
+
+    auto proof_T1 = expTau(t, domainSize);
+    auto proof_T2 = expTau(t+domainSize, domainSize);
+    auto proof_T3 = expTau(t+domainSize*2, domainSize+6);
 
 
 /*
