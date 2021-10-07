@@ -15,30 +15,6 @@ using namespace CPlusPlusLogging;
 namespace Plonk {
 
     template <typename Engine>
-    class Proof {
-        Engine &E;
-    public:
-        typename Engine::G1PointAffine A;
-        typename Engine::G2PointAffine B;
-        typename Engine::G1PointAffine C;
-
-        Proof(Engine &_E) : E(_E) { };
-        std::string toJsonStr();
-        json toJson();
-    };
-
-
- #pragma pack(push, 1)
-    template <typename Engine>
-    struct Coef {
-        u_int32_t m;
-        u_int32_t c;
-        u_int32_t s;
-        typename Engine::FrElement coef;
-    };
-#pragma pack(pop)
-
-    template <typename Engine>
     class Prover {
 
         Engine &E;
@@ -200,7 +176,8 @@ namespace Plonk {
             delete fft;
         }
 
-        std::unique_ptr<Proof<Engine>> prove(typename Engine::FrElement *wtns);
+//        std::unique_ptr<Proof<Engine>>
+        std::string prove(typename Engine::FrElement *wtns);
 
         void mul2(typename Engine::FrElement &a,
                 typename Engine::FrElement &b,
@@ -339,6 +316,22 @@ namespace Plonk {
         }
 
         void G1toRprUncompressed(uint8_t *transcript1, int offset, typename Engine::G1PointAffine &p) {
+            uint8_t *tmp;
+            typename Engine::F1Element bm;
+            E.f1.fromMontgomery(bm, p.x);
+            tmp = (uint8_t*)(&bm);
+            for (int i = 0; i < 32; i++) {
+                transcript1[i+offset] = tmp[31-i];
+            }
+            E.f1.fromMontgomery(bm, p.y);
+            tmp = (uint8_t*)(&bm);
+            for (int i = 0; i < 32; i++) {
+                transcript1[i+offset+32] = tmp[31-i];
+            }
+
+        }
+
+        void G1toRprUncompressed(uint8_t *transcript1, int offset, typename Engine::G1 &p) {
             uint8_t *tmp;
             typename Engine::F1Element bm;
             E.f1.fromMontgomery(bm, p.x);

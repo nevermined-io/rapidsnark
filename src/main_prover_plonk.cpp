@@ -94,7 +94,7 @@ int main(int argc, char **argv) {
 
         std::ofstream proofFile;
         proofFile.open (proofFilename);
-        proofFile << proof->toJson();
+        proofFile << proof;
         proofFile.close();
 
         std::ofstream publicFile;

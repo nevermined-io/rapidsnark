@@ -13,13 +13,12 @@ u_int32_t readUInt32(void *buf, uint32_t pos) {
 
 
 template <typename Engine>
-std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
+std::string Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
     wtns = _wtns;
     LOG_DEBUG(E.f2.toString(X_2.x).c_str());
     wtns[0] = E.fr.zero();
 
     // Calculate additions
-    // typename Engine::FrElement *internalWitness = new typename Engine::FrElement[n8r*nAdditions];
     uint32_t sSum = 8+n8r*2;
 
     typename Engine::FrElement r;
@@ -711,59 +710,38 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
     E.fr.mul(tmp1, xi, frw[power]);
     divPol1(pol_wxiw, tmp1, domainSize+3, pol_wxiw_);
     auto proof_Wxiw = expTau(pol_wxiw_, domainSize+3);
-    Proof<Engine> *p = new Proof<Engine>(Engine::engine);
 
-    return std::unique_ptr<Proof<Engine>>(p);
+    uint8_t *res = new uint8_t[n8r*25];
+    G1toRprUncompressed(res, n8r*0, proof_A);
+    G1toRprUncompressed(res, n8r*2, proof_B);
+    G1toRprUncompressed(res, n8r*4, proof_C);
+    G1toRprUncompressed(res, n8r*6, proof_Z);
+    G1toRprUncompressed(res, n8r*8, proof_T1);
+    G1toRprUncompressed(res, n8r*10, proof_T2);
+    G1toRprUncompressed(res, n8r*12, proof_T3);
+    G1toRprUncompressed(res, n8r*14, proof_Wxi);
+    G1toRprUncompressed(res, n8r*16, proof_Wxiw);
+    FrtoRprBE(res, n8r*18, proof_eval_a);
+    FrtoRprBE(res, n8r*19, proof_eval_b);
+    FrtoRprBE(res, n8r*20, proof_eval_c);
+    FrtoRprBE(res, n8r*21, proof_eval_s1);
+    FrtoRprBE(res, n8r*22, proof_eval_s2);
+    FrtoRprBE(res, n8r*23, proof_eval_zw);
+    FrtoRprBE(res, n8r*24, proof_eval_r);
+    std::stringstream ss;
+    ss << "0x";
+    for (int i = 0; i < n8r*25; i++) {
+        if (res[i] < 16) {
+            ss << "0" << std::hex << int(res[i]);
+        } else {
+            ss << std::hex << int(res[i]);
+        }
+    }
+    std::string result;
+    ss >> result;
+    std::cerr << result << "\n";
+
+    return result;
 }
-
-template <typename Engine>
-std::string Proof<Engine>::toJsonStr() {
-
-    std::ostringstream ss;
-    /*
-    ss << "{ \"pi_a\":[\"" << E.f1.toString(A.x) << "\",\"" << E.f1.toString(A.y) << "\",\"1\"], ";
-    ss << " \"pi_b\": [[\"" << E.f1.toString(B.x.a) << "\",\"" << E.f1.toString(B.x.b) << "\"],[\"" << E.f1.toString(B.y.a) << "\",\"" << E.f1.toString(B.y.b) << "\"], [\"1\",\"0\"]], ";
-    ss << " \"pi_c\": [\"" << E.f1.toString(C.x) << "\",\"" << E.f1.toString(C.y) << "\",\"1\"], ";
-    */
-    ss << "{ \"protocol\":\"plonk\" }";
-        
-    return ss.str();
-}
-
-template <typename Engine>
-json Proof<Engine>::toJson() {
-
-    json p;
-
-/*    p["pi_a"] = {};
-    p["pi_a"].push_back(E.f1.toString(A.x) );
-    p["pi_a"].push_back(E.f1.toString(A.y) );
-    p["pi_a"].push_back("1" );
-
-
-    json x2;
-    x2.push_back(E.f1.toString(B.x.a));
-    x2.push_back(E.f1.toString(B.x.b));
-    json y2;
-    y2.push_back(E.f1.toString(B.y.a));
-    y2.push_back(E.f1.toString(B.y.b));
-    json z2;
-    z2.push_back("1");
-    z2.push_back("0");
-    p["pi_b"] = {};
-    p["pi_b"].push_back(x2);
-    p["pi_b"].push_back(y2);
-    p["pi_b"].push_back(z2);
-
-    p["pi_c"] = {};
-    p["pi_c"].push_back(E.f1.toString(C.x) );
-    p["pi_c"].push_back(E.f1.toString(C.y) );
-    p["pi_c"].push_back("1" );
-*/
-    p["protocol"] = "plonk";
-            
-    return p;
-}
-
 
 } // namespace
