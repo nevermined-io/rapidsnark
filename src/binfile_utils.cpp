@@ -139,8 +139,8 @@ void *BinFile::read(u_int64_t len) {
     return res;
 }
 
-std::unique_ptr<BinFile> openExisting(std::string filename, std::string type, uint32_t maxVersion) {
-    return std::unique_ptr<BinFile>(new BinFile(filename, type, maxVersion));
+BinFile *openExisting(std::string filename, std::string type, uint32_t maxVersion) {
+    return new BinFile(filename, type, maxVersion);
 }
 
 } // Namespace

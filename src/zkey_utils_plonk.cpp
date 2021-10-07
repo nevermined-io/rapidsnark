@@ -13,8 +13,7 @@ Header::~Header() {
     mpz_clear(rPrime);
 }
 
-
-std::unique_ptr<Header> loadHeader(BinFileUtils::BinFile *f) {
+Header *loadHeader(BinFileUtils::BinFile *f) {
     auto h = new Header();
 
     f->startReadSection(1);
@@ -57,7 +56,7 @@ std::unique_ptr<Header> loadHeader(BinFileUtils::BinFile *f) {
     h->X_2 = f->read(h->n8q*4);
     f->endReadSection();
 
-    return std::unique_ptr<Header>(h);
+    return h;
 }
 
 } // namespace

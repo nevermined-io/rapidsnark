@@ -43,7 +43,7 @@ int main(int argc, char **argv) {
         std::string publicFilename = argv[4];
 
         auto zkey = BinFileUtils::openExisting(zkeyFilename, "zkey", 1);
-        auto zkeyHeader = ZKeyUtilsPlonk::loadHeader(zkey.get());
+        auto zkeyHeader = ZKeyUtilsPlonk::loadHeader(zkey);
 
         std::string proofStr;
         if (mpz_cmp(zkeyHeader->rPrime, altBbn128r) != 0) {
@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
         }
 
         auto wtns = BinFileUtils::openExisting(wtnsFilename, "wtns", 2);
-        auto wtnsHeader = WtnsUtils::loadHeader(wtns.get());
+        auto wtnsHeader = WtnsUtils::loadHeader(wtns);
 
         if (mpz_cmp(wtnsHeader->prime, altBbn128r) != 0) {
             throw std::invalid_argument( "different wtns curve" );

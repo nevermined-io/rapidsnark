@@ -40,7 +40,7 @@ namespace ZKeyUtilsPlonk {
         ~Header();
     };
 
-    std::unique_ptr<Header> loadHeader(BinFileUtils::BinFile *f);
+    Header *loadHeader(BinFileUtils::BinFile *f);
 }
 
 #endif // ZKEY_UTILS_H

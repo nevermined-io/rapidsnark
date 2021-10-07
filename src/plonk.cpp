@@ -14,9 +14,14 @@ u_int32_t readUInt32(void *buf, uint32_t pos) {
 
 template <typename Engine>
 std::string Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
+    std::cerr << "brokne???\n";
     wtns = _wtns;
-    LOG_DEBUG(E.f2.toString(X_2.x).c_str());
+    std::cerr << "brokne!\n";
+    // E.fr.toString(X_2.x);
+    E.f2.toString(X_2.x);
+    // LOG_DEBUG(E.f2.toString(X_2.x).c_str());
     wtns[0] = E.fr.zero();
+    std::cerr << "engine???\n";
 
     // Calculate additions
     uint32_t sSum = 8+n8r*2;

@@ -484,7 +484,7 @@ namespace Plonk {
     };
 
     template <typename Engine>
-    std::unique_ptr<Prover<Engine>> makeProver(
+    Prover<Engine> *makeProver(
         u_int32_t nVars, 
         u_int32_t nPublic, 
         u_int32_t domainSize,
@@ -553,7 +553,7 @@ namespace Plonk {
             (typename Engine::FrElement *)qcData,
             (typename Engine::FrElement *)polData
         );
-        return std::unique_ptr< Prover<Engine> >(p);
+        return p;
     }
 };
 

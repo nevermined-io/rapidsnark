@@ -49,7 +49,7 @@ namespace BinFileUtils {
         void *read(uint64_t l);
     };
 
-    std::unique_ptr<BinFile> openExisting(std::string filename, std::string type, uint32_t maxVersion);
+    BinFile *openExisting(std::string filename, std::string type, uint32_t maxVersion);
 }
 
 #endif // BINFILE_UTILS_H
