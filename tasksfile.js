@@ -113,11 +113,35 @@ function buildProver() {
     );
 }
 
+function buildWitness() {
+    sh("g++" +
+        " -I."+
+        " -I../src"+
+        " -I../depends/ffiasm/c"+
+        " -I../depends/circom_runtime/c"+
+        " -I../depends/json/single_include"+
+        " ../depends/ffiasm/c/misc.cpp"+
+        " ../depends/ffiasm/c/naf.cpp"+
+        " ../depends/ffiasm/c/splitparstr.cpp"+
+        " ../depends/ffiasm/c/alt_bn128.cpp"+
+        " ../depends/circom_runtime/c/main.cpp"+
+        " ../depends/circom_runtime/c/utils.cpp"+
+        " ../depends/circom_runtime/c/calcwit.cpp"+
+        " ../keytransfer.cpp"+
+        " fq.cpp"+
+        " fq.o"+
+        " fr.cpp"+
+        " fr.o"+
+        " -o ../keytransfer" +
+        " -fmax-errors=5 -std=c++17 -pthread -lgmp -lsodium -lsha3 -O3 -fopenmp", {cwd: "build", nopipe: true}
+    );
+}
 
 cli({
     cleanAll,
     createFieldSources,
     buildPistche,
     buildProverServer,
+    buildWitness,
     buildProver
 });
