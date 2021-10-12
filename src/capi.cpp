@@ -30,6 +30,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/time.h>
+
 using json = nlohmann::json;
 
 Circom_Circuit *circuit;
@@ -269,9 +270,11 @@ extern "C" {
         std::cerr << "Proof: " << proof << "\n";
     }
 
+/*
     int main() {
         void *ptr = make("keytransfer.zkey", "keytransfer.dat");
         fullprove(ptr, "tmp.wtns", "input.json");
     }
+*/
 }
 

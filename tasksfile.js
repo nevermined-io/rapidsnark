@@ -136,33 +136,43 @@ function buildWitness() {
         " -fmax-errors=5 -std=c++17 -pthread -lgmp -lsodium -lsha3 -O3 -fopenmp", {cwd: "build", nopipe: true}
     );
 }
+
+function compile(file, out) {
+    sh("g++ -fPIC -c" +
+    " -I."+
+    " -I../src"+
+    " -I../depends/ffiasm/c"+
+    " -I../depends/circom_runtime/c"+
+    " -I../depends/json/single_include"+
+    " " + file +
+    " -o " + out +
+    " -fmax-errors=5 -std=c++17 -pthread ", {cwd: "build", nopipe: true}
+);
+
+}
+
 function buildApi() {
-    sh("g++" +
-        " -I."+
-        " -I../src"+
-        " -I../depends/ffiasm/c"+
-        " -I../depends/circom_runtime/c"+
-        " -I../depends/json/single_include"+
-        " ../depends/ffiasm/c/misc.cpp"+
-        " ../depends/ffiasm/c/naf.cpp"+
-        " ../depends/ffiasm/c/splitparstr.cpp"+
-        " ../depends/ffiasm/c/alt_bn128.cpp"+
-//        " ../depends/circom_runtime/c/main.cpp"+
-        " ../depends/circom_runtime/c/utils.cpp"+
-        " ../depends/circom_runtime/c/calcwit.cpp"+
-        " ../keytransfer.cpp"+
-        " fq.cpp"+
-        " fq.o"+
-        " fr.cpp"+
-        " fr.o"+
-        " ../src/binfile_utils.cpp"+
-        " ../src/zkey_utils_plonk.cpp"+
-        " ../src/wtns_utils.cpp"+
-        " ../src/logger.cpp"+
-        " ../src/capi.cpp"+
-        " -o capi_test" +
-        " -fmax-errors=5 -std=c++17 -pthread -lgmp -lsodium -lsha3 -O3 -fopenmp", {cwd: "build", nopipe: true}
-    );
+    let files = [
+        "../depends/ffiasm/c/misc.cpp",
+        "../depends/ffiasm/c/naf.cpp",
+        "../depends/ffiasm/c/splitparstr.cpp",
+        "../depends/ffiasm/c/alt_bn128.cpp",
+        "../depends/circom_runtime/c/utils.cpp",
+        "../depends/circom_runtime/c/calcwit.cpp",
+        "../keytransfer.cpp",
+        "../src/binfile_utils.cpp",
+        "../src/zkey_utils_plonk.cpp",
+        "../src/wtns_utils.cpp",
+        "../src/logger.cpp",
+        "../src/capi.cpp",
+    ]
+    compile("fq.cpp", "fq_c.o")
+    compile("fr.cpp", "fr_c.o")
+    files.forEach(a => compile(a, a.substr(0, a.length-4) + ".o"))
+    let objs = ["fq.o", "fr.o", "fq_c.o", "fr_c.o"].concat(files.map(a => a.substr(0, a.length-4) + ".o"))
+    sh("g++ -shared -o libkeytransfer.so " + objs.join(" ") +
+        " -pthread -lgmp -lsodium -lsha3 -O3 -fopenmp", {cwd: "build", nopipe: true})
+    sh("g++ -o capi_test -L. -I ../src ../src/capi_test.cpp -lkeytransfer -pthread -lgmp -lsodium -lsha3 -O3 -fopenmp", {cwd: "build", nopipe: true})
 }
 
 cli({

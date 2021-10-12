@@ -72,3 +72,5 @@ keytransfer
 witness.wtns
 proof.json
 tmp.wtns
+
+*.o
