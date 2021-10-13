@@ -14,14 +14,14 @@ u_int32_t readUInt32(void *buf, uint32_t pos) {
 
 template <typename Engine>
 std::string Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
-    std::cerr << "brokne???\n";
+    // std::cerr << "brokne???\n";
     wtns = _wtns;
-    std::cerr << "brokne!\n";
+    // std::cerr << "brokne!\n";
     // E.fr.toString(X_2.x);
     E.f2.toString(X_2.x);
     // LOG_DEBUG(E.f2.toString(X_2.x).c_str());
     wtns[0] = E.fr.zero();
-    std::cerr << "engine???\n";
+    // std::cerr << "engine???\n";
 
     // Calculate additions
     uint32_t sSum = 8+n8r*2;
@@ -97,6 +97,7 @@ std::string Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
 
     // TODO: remove this
     // they shouldn't really be random for testing
+    /*
     for (int i = 0; i < 10; i++) {
         aux2 = E.fr.zero();
         for (int j = 0; j < 100; j++) {
@@ -106,6 +107,7 @@ std::string Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
         ch_b[i] = aux2;
         LOG_DEBUG(E.fr.toString(ch_b[i]).c_str());
     }
+    */
 
     typename Engine::FrElement *pol_a, *A4;
     to4T(A, domainSize, {ch_b[2], ch_b[1]}, pol_a, A4);
@@ -270,9 +272,10 @@ std::string Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
     typename Engine::FrElement *pol_z, *Z4;
     to4T(Z, domainSize, {ch_b[9], ch_b[8], ch_b[7]}, pol_z, Z4);
 
+    /*
     for (int i = 0; i < 10; i++) {
         std::cerr << "Z4[" << i << "] = " << E.fr.toString(Z4[i]) << "\n";
-    }
+    }*/
 
     typename Engine::G1PointAffine proof_Z = expTau(pol_z, domainSize+3);
 
@@ -320,10 +323,11 @@ std::string Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
         typename Engine::FrElement c = C4[i];
         typename Engine::FrElement z = Z4[i];
         typename Engine::FrElement zw = Z4[(i+domainSize*4+4)%(domainSize*4)];
+        /*
         if (i == 0) {
             std::cerr << "index " << (i+domainSize*4+4)%(domainSize*4) << "\n";
             std::cerr << "zw " << E.fr.toString(zw) << "\n";
-        }
+        }*/
         typename Engine::FrElement qm = QM4[i];
         typename Engine::FrElement ql = QL4[i];
         typename Engine::FrElement qr = QR4[i];
@@ -357,22 +361,24 @@ std::string Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
             E.fr.mul(tmp1, polData[j*5*domainSize+ domainSize+ i], A[j]);
             E.fr.sub(pl, pl, tmp1);
         }
+        /*
         if (i == 0) {
             std::cerr << "pl " << E.fr.toString(pl) << "\n";
-        }
+        }*/
 
         typename Engine::FrElement e1, e1z;
         mul2(a, b, ap, bp, i%4, e1, e1z);
         E.fr.mul(e1, e1, qm);
         E.fr.mul(e1z, e1z, qm);
 
+        /*
         if (i == 0) {
             std::cerr << "e1 " << E.fr.toString(e1) << "\n";
             std::cerr << "e1z " << E.fr.toString(e1z) << "\n";
             std::cerr << "ql " << E.fr.toString(ql) << "\n";
             std::cerr << "a " << E.fr.toString(a) << "\n";
             std::cerr << "ap " << E.fr.toString(ap) << "\n";
-        }
+        }*/
         E.fr.mul(tmp1, a, ql);
         E.fr.add(e1, e1, tmp1);
         E.fr.mul(tmp1, ap, ql);
@@ -391,10 +397,11 @@ std::string Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
         E.fr.add(e1, e1, pl);
         E.fr.add(e1, e1, qc);
 
+        /*
         if (i == 0) {
             std::cerr << "e1 " << E.fr.toString(e1) << "\n";
             std::cerr << "e1z " << E.fr.toString(e1z) << "\n";
-        }
+        }*/
         typename Engine::FrElement e2, e2z, betaw, e2a, e2b, e2c, e2d;
         E.fr.mul(betaw, beta, w);
         e2a =a;
@@ -414,10 +421,11 @@ std::string Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
         e2d = z;
 
         mul4(e2a, e2b, e2c, e2d, ap, bp, cp, zp, i%4, e2, e2z);
+        /*
         if (i == 0) {
             std::cerr << "e2 " << E.fr.toString(e2) << "\n";
             std::cerr << "e2z " << E.fr.toString(e2z) << "\n";
-        }
+        }*/
         E.fr.mul(e2, e2, alpha);
         E.fr.mul(e2z, e2z, alpha);
 
@@ -438,18 +446,19 @@ std::string Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
         E.fr.add(e3c, e3c, gamma);
 
         e3d = zw;
+        /*
         if (i == 0) {
             std::cerr << "e3a " << E.fr.toString(e3a) << "\n";
             std::cerr << "e3b " << E.fr.toString(e3b) << "\n";
             std::cerr << "e3c " << E.fr.toString(e3c) << "\n";
             std::cerr << "e3d " << E.fr.toString(e3d) << "\n";
             std::cerr << "zWp " << E.fr.toString(zWp) << "\n";
-        }
+        }*/
         mul4(e3a, e3b, e3c, e3d, ap, bp, cp, zWp, i%4, e3, e3z);
-        if (i == 0) {
+        /* if (i == 0) {
             std::cerr << "e3 " << E.fr.toString(e3) << "\n";
             std::cerr << "e3z " << E.fr.toString(e3z) << "\n";
-        }
+        }*/
 
         E.fr.mul(e3, e3, alpha);
         E.fr.mul(e3z, e3z, alpha);
@@ -479,13 +488,15 @@ std::string Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
         E.fr.mul(w, w, frw[power+2]);
     }
 
+    /*
     std::cerr << "final w " << E.fr.toString(w) << "\n";
     std::cerr << "T[1001] " << E.fr.toString(T[1001]) << "\n";
     std::cerr << "Tz[1001] " << E.fr.toString(Tz[1001]) << "\n";
+    */
 
     fft->ifft(T, domainSize*4);
     typename Engine::FrElement *t = T;
-    std::cerr << "t[1001] " << E.fr.toString(t[1001]) << "\n";
+    // std::cerr << "t[1001] " << E.fr.toString(t[1001]) << "\n";
 
     // dividing T/Z    
     for (int i=0; i<domainSize; i++) {
@@ -501,7 +512,7 @@ std::string Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
             }
         }*/
     }
-    std::cerr << "t[1001+size] " << E.fr.toString(t[1001+domainSize]) << "\n";
+    // std::cerr << "t[1001+size] " << E.fr.toString(t[1001+domainSize]) << "\n";
 
     fft->ifft(Tz, domainSize*4);
     typename Engine::FrElement *tz = Tz;
@@ -516,7 +527,7 @@ std::string Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
             E.fr.add(t[i], t[i], tz[i]);
         }
     }
-    std::cerr << "t[1001+size] " << E.fr.toString(t[1001+domainSize]) << "\n";
+    // std::cerr << "t[1001+size] " << E.fr.toString(t[1001+domainSize]) << "\n";
 
     typename Engine::FrElement *pol_t = t; // size: domainSize*3+6
 
@@ -744,7 +755,7 @@ std::string Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
     }
     std::string result;
     ss >> result;
-    std::cerr << result << "\n";
+    // std::cerr << result << "\n";
 
     return result;
 }

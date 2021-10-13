@@ -47,6 +47,7 @@ Logger::Logger()
    m_LogLevel	= LOG_LEVEL_TRACE;
    m_LogType	= FILE_LOG;
 
+/*
    // Initialize mutex
 #ifdef WIN32
    InitializeCriticalSection(&m_Mutex);
@@ -65,17 +66,19 @@ Logger::Logger()
       exit(0);
    }   
 #endif
+*/
 }
 
 Logger::~Logger()
 {
    m_File.close();
+   /*
 #ifdef WIN32
    DeleteCriticalSection(&m_Mutex);
 #else
    pthread_mutexattr_destroy(&m_Attr);
    pthread_mutex_destroy(&m_Mutex);
-#endif
+#endif*/
 }
 
 Logger* Logger::getInstance() throw ()
@@ -89,20 +92,22 @@ Logger* Logger::getInstance() throw ()
 
 void Logger::lock()
 {
+   /*
 #ifdef WIN32
    EnterCriticalSection(&m_Mutex);
 #else
    pthread_mutex_lock(&m_Mutex);
 #endif
+*/
 }
 
 void Logger::unlock()
-{
+{/*
 #ifdef WIN32
    LeaveCriticalSection(&m_Mutex);
 #else
    pthread_mutex_unlock(&m_Mutex);
-#endif
+#endif*/
 }
 
 void Logger::logIntoFile(std::string& data)

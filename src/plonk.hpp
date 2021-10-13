@@ -384,7 +384,7 @@ namespace Plonk {
                 E.fr.mul(res, res, x);
                 E.fr.add(res, res, P[i]);
             }
-            std::cerr << "evalpol " << n << " res " << E.fr.toString(res) << "\n";
+            // std::cerr << "evalpol " << n << " res " << E.fr.toString(res) << "\n";
             return res;
         }
 

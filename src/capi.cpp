@@ -200,7 +200,7 @@ void writeOutBin(Circom_CalcWit *ctx, std::string filename) {
 extern "C" {
     void *make(const char *_zkey, const char *_dat) {
         Logger::getInstance()->enableConsoleLogging();
-        Logger::getInstance()->updateLogLevel(LOG_LEVEL_DEBUG);
+        Logger::getInstance()->updateLogLevel(DISABLE_LOG);
         std::string zkeyFilename = _zkey;
         std::string datFilename = _dat;
 
@@ -246,12 +246,12 @@ extern "C" {
         );
         my_data *dta = new my_data;
         dta->prover = prover;
-        std::cerr << "Made prover " << (uint64_t)dta << "\n";
+        // std::cerr << "Made prover " << (uint64_t)dta << "\n";
         dta->calcwit = ctx;
         return (void*)dta;
     }
 
-    void fullprove(void *ptr, const char *_wtns, const char *_in) {
+    char *fullprove(void *ptr, const char *_wtns, const char *_in) {
         my_data *dta = (my_data*)ptr;
         std::string wtnsFilename = _wtns;
         std::string inFilename = _in;
@@ -259,15 +259,21 @@ extern "C" {
         loadJson(dta->calcwit, inFilename);
         dta->calcwit->join();
         writeOutBin(dta->calcwit, wtnsFilename);
-        std::cerr << "wrote binary\n";
+        // std::cerr << "wrote binary\n";
 
         auto wtns = BinFileUtils::openExisting(wtnsFilename, "wtns", 2);
         auto wtnsHeader = WtnsUtils::loadHeader(wtns);
 
         AltBn128::FrElement *wtnsData = (AltBn128::FrElement *)wtns->getSectionData(2);
-        std::cerr << "Going to prove " << (uint64_t)ptr << "\n";
+        // std::cerr << "Going to prove " << (uint64_t)ptr << "\n";
         auto proof = dta->prover->prove(wtnsData);
-        std::cerr << "Proof: " << proof << "\n";
+        // std::cerr << "Proof: " << proof << "\n";
+        char *result = new char[proof.size()+1];
+        for (int i = 0; i < proof.size(); i++) {
+            result[i] = proof[i];
+        }
+        result[proof.size()] = 0;
+        return result;
     }
 
 /*
