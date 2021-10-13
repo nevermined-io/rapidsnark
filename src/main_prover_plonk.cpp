@@ -97,6 +97,8 @@ int main(int argc, char **argv) {
         proofFile << proof;
         proofFile.close();
 
+        std::cerr << "Proof: " << proof << "\n";
+
         std::ofstream publicFile;
         publicFile.open (publicFilename);
 

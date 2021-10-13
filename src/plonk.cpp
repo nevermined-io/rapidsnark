@@ -61,6 +61,8 @@ std::string Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
 
     for (uint32_t i = 0; i < domainSize; i++) {
         A[i] = E.fr.zero();
+        B[i] = E.fr.zero();
+        C[i] = E.fr.zero();
     }
 
     for (uint32_t i = 0; i < nConstrain; i++) {
@@ -91,8 +93,9 @@ std::string Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
     // Random elements
     typename Engine::FrElement *ch_b = new typename Engine::FrElement[10];
     for (int i = 0; i < 10; i++) {
-        randombytes_buf((void *)&(ch_b[i]), n8r);
-        // b[i] = E.fr.random();
+        randombytes_buf((void *)&(ch_b[i]), n8r-1);
+        E.fr.mul(ch_b[i], ch_b[i], ch_b[i]);
+        LOG_DEBUG(E.fr.toString(ch_b[i]).c_str());
     }
 
     // TODO: remove this
@@ -104,10 +107,10 @@ std::string Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
             aux1 = getWitness(j+i);
             E.fr.add(aux2, aux2, aux1);
         }
+        // E.fr.mul(aux2, aux2, aux1);
         ch_b[i] = aux2;
         LOG_DEBUG(E.fr.toString(ch_b[i]).c_str());
-    }
-    */
+    }*/
 
     typename Engine::FrElement *pol_a, *A4;
     to4T(A, domainSize, {ch_b[2], ch_b[1]}, pol_a, A4);
@@ -137,6 +140,8 @@ std::string Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
     */
 
     typename Engine::FrElement beta = hashToFr(transcript1, 64*3);
+    LOG_DEBUG("beta");
+    LOG_DEBUG(E.fr.toString(beta).c_str());
 
     uint8_t *transcript2 = new uint8_t[32];
     FrtoRprBE(transcript2, 0, beta);
@@ -150,6 +155,8 @@ std::string Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
     */
 
     typename Engine::FrElement gamma = hashToFr(transcript2, 32);
+    LOG_DEBUG("gamma");
+    LOG_DEBUG(E.fr.toString(gamma).c_str());
 
     typename Engine::FrElement *numArr = new typename Engine::FrElement[domainSize];
     typename Engine::FrElement *denArr = new typename Engine::FrElement[domainSize];
@@ -159,14 +166,14 @@ std::string Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
     denArr[0] = E.fr.one();
 
     typename Engine::FrElement w = E.fr.one();
-    typename Engine::FrElement tmp1, tmp2, tmp3;
+    typename Engine::FrElement tmp1, tmp2, tmp3, k1_mont, k2_mont;
 
     LOG_DEBUG("k1");
-    E.fr.fromMontgomery(k1, k1);
-    LOG_DEBUG(E.fr.toString(k1).c_str());
+    E.fr.fromMontgomery(k1_mont, k1);
+    LOG_DEBUG(E.fr.toString(k1_mont).c_str());
     LOG_DEBUG("k2");
-    E.fr.fromMontgomery(k2, k2);
-    LOG_DEBUG(E.fr.toString(k2).c_str());
+    E.fr.fromMontgomery(k2_mont, k2);
+    LOG_DEBUG(E.fr.toString(k2_mont).c_str());
 
     int power = log2(domainSize);
 
@@ -197,13 +204,13 @@ std::string Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
 
         auto n2 = B[i];
         E.fr.mul(tmp1, beta, w);
-        E.fr.mul(tmp1, tmp1, k1);
+        E.fr.mul(tmp1, tmp1, k1_mont);
         E.fr.add(n2, n2, tmp1);
         E.fr.add(n2, n2, gamma );
 
         auto n3 = C[i];
         E.fr.mul(tmp1, beta, w);
-        E.fr.mul(tmp1, tmp1, k2);
+        E.fr.mul(tmp1, tmp1, k2_mont);
         E.fr.add(n3, n3, tmp1);
         E.fr.add(n3, n3, gamma );
 
@@ -409,12 +416,12 @@ std::string Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
         E.fr.add(e2a, e2a, gamma);
 
         e2b =b;
-        E.fr.mul(tmp1, betaw, k1);
+        E.fr.mul(tmp1, betaw, k1_mont);
         E.fr.add(e2b, e2b, tmp1);
         E.fr.add(e2b, e2b, gamma);
 
         e2c =c;
-        E.fr.mul(tmp1, betaw, k2);
+        E.fr.mul(tmp1, betaw, k2_mont);
         E.fr.add(e2c, e2c, tmp1);
         E.fr.add(e2c, e2c, gamma);
 
@@ -570,12 +577,12 @@ std::string Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
     E.fr.add(e2a, e2a, gamma);
 
     auto e2b = proof_eval_b;
-    E.fr.mul(tmp1, betaxi, k1);
+    E.fr.mul(tmp1, betaxi, k1_mont);
     E.fr.add(e2b, e2b, tmp1);
     E.fr.add(e2b, e2b, gamma);
 
     auto e2c = proof_eval_c;
-    E.fr.mul(tmp1, betaxi, k2);
+    E.fr.mul(tmp1, betaxi, k2_mont);
     E.fr.add(e2c, e2c, tmp1);
     E.fr.add(e2c, e2c, gamma);
 

@@ -85,9 +85,9 @@ void loadJson(Circom_CalcWit *ctx, std::string filename) {
     inStream >> j;
 
     u64 nItems = j.size();
-    printf("Items : %llu\n",nItems);
+    // printf("Items : %llu\n",nItems);
     for (json::iterator it = j.begin(); it != j.end(); ++it) {
-//      std::cout << it.key() << " => " << it.value() << '\n';
+      // std::cout << it.key() << " => " << it.value() << '\n';
       u64 h = fnv1a(it.key());
       int o;
       try {
@@ -201,6 +201,7 @@ extern "C" {
     void *make(const char *_zkey, const char *_dat) {
         Logger::getInstance()->enableConsoleLogging();
         Logger::getInstance()->updateLogLevel(DISABLE_LOG);
+        // Logger::getInstance()->updateLogLevel(LOG_LEVEL_DEBUG);
         std::string zkeyFilename = _zkey;
         std::string datFilename = _dat;
 
@@ -256,6 +257,7 @@ extern "C" {
         std::string wtnsFilename = _wtns;
         std::string inFilename = _in;
 
+        dta->calcwit->reset();
         loadJson(dta->calcwit, inFilename);
         dta->calcwit->join();
         writeOutBin(dta->calcwit, wtnsFilename);

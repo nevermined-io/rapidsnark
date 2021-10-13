@@ -130,6 +130,9 @@ namespace Plonk {
         {
             fft = new FFT<typename Engine::Fr>(domainSize*4);
             internalWitness = new typename Engine::FrElement[nAdditions];
+            for (int i = 0; i < nAdditions; i++) {
+                internalWitness[i] = E.fr.zero();
+            }
             // LOG_DEBUG("Fr.w");
             E.fr.fromString(frw[28], "19103219067921713944291392827692070036145651957329286315305642004821462161904");
             for (int i = 27; i >= 0; i--) {
@@ -427,9 +430,9 @@ namespace Plonk {
                 // LOG_DEBUG("hmm");
                 // LOG_DEBUG(E.fr.toString(a[i]).c_str());
             }
-            /*
             LOG_DEBUG("before ifft");
             LOG_DEBUG(E.fr.toString(a[0]).c_str());
+            /*
             LOG_DEBUG("size");
             LOG_DEBUG(std::to_string(size));
             */
