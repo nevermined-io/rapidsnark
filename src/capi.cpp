@@ -253,12 +253,12 @@ extern "C" {
     }
 
     char *fullprove(void *ptr, const char *_wtns, const char *_in) {
+        /*
         my_data *dta = (my_data*)ptr;
         std::string wtnsFilename = _wtns;
         std::string inFilename = _in;
 
         dta->calcwit->reset();
-        /*
         loadJson(dta->calcwit, inFilename);
         dta->calcwit->join();
         writeOutBin(dta->calcwit, wtnsFilename);
