@@ -93,6 +93,7 @@ std::string Prover<Engine>::prove(typename Engine::FrElement *_wtns) {
     // Random elements
     typename Engine::FrElement *ch_b = new typename Engine::FrElement[10];
     for (int i = 0; i < 10; i++) {
+        ch_b[i] = E.fr.zero();
         randombytes_buf((void *)&(ch_b[i]), n8r-1);
         E.fr.mul(ch_b[i], ch_b[i], ch_b[i]);
         LOG_DEBUG(E.fr.toString(ch_b[i]).c_str());
