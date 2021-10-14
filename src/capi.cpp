@@ -249,18 +249,13 @@ extern "C" {
         dta->prover = prover;
         // std::cerr << "Made prover " << (uint64_t)dta << "\n";
         dta->calcwit = ctx;
-        std::cerr << "witness address " << (long)dta->calcwit << "\n";
-        std::cerr << "ptr address " << (long)dta << "\n";
         return (void*)dta;
     }
 
     char *fullprove(void *ptr, const char *_wtns, const char *_in) {
-        std::cerr << "is ptr corrupted? " << (long)ptr << "\n";
-        /*
         my_data *dta = (my_data*)ptr;
         std::string wtnsFilename = _wtns;
         std::string inFilename = _in;
-        std::cerr << wtnsFilename << " " << inFilename << " " << (long)dta->calcwit << "\n";
 
         dta->calcwit->reset();
         loadJson(dta->calcwit, inFilename);
@@ -281,8 +276,6 @@ extern "C" {
         }
         result[proof.size()] = 0;
         return result;
-        */
-       return 0;
     }
 
 /*
