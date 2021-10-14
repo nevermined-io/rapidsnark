@@ -255,13 +255,13 @@ extern "C" {
     }
 
     char *fullprove(void *ptr, const char *_wtns, const char *_in) {
+        std::cerr << "is ptr corrupted? " << (long)ptr << "\n";
+        /*
         my_data *dta = (my_data*)ptr;
         std::string wtnsFilename = _wtns;
         std::string inFilename = _in;
-        std::cerr << "is ptr corrupted? " << (long)ptr << "\n";
         std::cerr << wtnsFilename << " " << inFilename << " " << (long)dta->calcwit << "\n";
 
-        /*
         dta->calcwit->reset();
         loadJson(dta->calcwit, inFilename);
         dta->calcwit->join();
