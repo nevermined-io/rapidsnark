@@ -45,4 +45,5 @@ jobs:
         sudo ldconfig
         ./build/capi_test
         python --version
+        python test2.py
         python test.py
