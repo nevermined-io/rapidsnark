@@ -44,3 +44,4 @@ jobs:
         sudo cp keytransfer.zkey keytransfer.dat /usr/local/share/keytransfer
         sudo ldconfig
         ./build/capi_test
+        python test.py
