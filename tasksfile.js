@@ -172,7 +172,7 @@ function buildApi() {
     let objs = ["fq.o", "fr.o", "fq_c.o", "fr_c.o"].concat(files.map(a => a.substr(0, a.length-4) + ".o"))
     sh("g++ -shared -o libkeytransfer.so " + objs.join(" ") +
         " -pthread -lgmp -lsodium -lsha3 -O3 -fopenmp", {cwd: "build", nopipe: true})
-    sh("g++ -o capi_test -L. -I ../src ../src/capi_test.cpp -lkeytransfer -pthread -lgmp -lsodium -lsha3 -O3 -fopenmp", {cwd: "build", nopipe: true})
+    sh("g++ -o capi_test -L. -I ../src ../src/capi_test.cpp -lkeytransfer -pthread -lgmp -lsodium -O3 -fopenmp", {cwd: "build", nopipe: true})
 }
 
 cli({
