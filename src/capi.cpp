@@ -250,7 +250,7 @@ extern "C" {
         // std::cerr << "Made prover " << (uint64_t)dta << "\n";
         dta->calcwit = ctx;
         std::cerr << "witness address " << (long)dta->calcwit << "\n";
-        std::cerr << "ptr address " << (long)ptr << "\n";
+        std::cerr << "ptr address " << (long)dta << "\n";
         return (void*)dta;
     }
 
