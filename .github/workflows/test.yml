@@ -24,8 +24,6 @@ jobs:
         git clone https://github.com/brainhub/SHA3IUF
         cd SHA3IUF && make && sudo make install && cd ..
         rm -rf SHA3IUF
-        git clone https://github.com/nevermined-io/rapidsnark
-        cd rapidsnark
         git submodule update --init --recursive
         npm i 
         npx task createFieldSources
