@@ -49,6 +49,8 @@ jobs:
         ./build/capi_test
         python --version
         ldd /usr/local/lib/libkeytransfer.so
+        python test3.py
+        echo "here..."
         python test2.py
         echo "here..."
         python test.py
