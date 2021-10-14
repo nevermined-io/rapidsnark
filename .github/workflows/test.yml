@@ -50,4 +50,5 @@ jobs:
         python --version
         ldd /usr/local/lib/libkeytransfer.so
         python test2.py
+        echo "here..."
         python test.py
