@@ -258,6 +258,7 @@ extern "C" {
         std::string inFilename = _in;
 
         dta->calcwit->reset();
+        /*
         loadJson(dta->calcwit, inFilename);
         dta->calcwit->join();
         writeOutBin(dta->calcwit, wtnsFilename);
@@ -276,6 +277,8 @@ extern "C" {
         }
         result[proof.size()] = 0;
         return result;
+        */
+       return 0;
     }
 
 /*
