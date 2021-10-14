@@ -43,6 +43,9 @@ jobs:
         sudo cp build/libkeytransfer.so /usr/local/lib/libkeytransfer.so
         sudo cp keytransfer.zkey keytransfer.dat /usr/local/share/keytransfer
         sudo ldconfig
+        npx task buildApi
+        sudo ldconfig
+        ldd ./build/capi_test
         ./build/capi_test
         python --version
         ldd /usr/local/lib/libkeytransfer.so
