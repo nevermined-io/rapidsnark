@@ -250,6 +250,7 @@ extern "C" {
         // std::cerr << "Made prover " << (uint64_t)dta << "\n";
         dta->calcwit = ctx;
         std::cerr << "witness address " << (long)dta->calcwit << "\n";
+        std::cerr << "ptr address " << (long)ptr << "\n";
         return (void*)dta;
     }
 
@@ -257,6 +258,7 @@ extern "C" {
         my_data *dta = (my_data*)ptr;
         std::string wtnsFilename = _wtns;
         std::string inFilename = _in;
+        std::cerr << "is ptr corrupted? " << (long)ptr << "\n";
         std::cerr << wtnsFilename << " " << inFilename << " " << (long)dta->calcwit << "\n";
 
         /*
