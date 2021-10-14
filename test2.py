@@ -3,8 +3,8 @@ print('hmmmmm')
 from ctypes import *
 
 print('loading library')
-#cdll.LoadLibrary("libkeytransfer.so")
-#print('loaded library')
+cdll.LoadLibrary("libkeytransfer.so")
+print('loaded library')
 
 #libkey = CDLL('libkeytransfer.so')
 
