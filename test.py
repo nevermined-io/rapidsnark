@@ -1,3 +1,5 @@
+print('hmmmmm')
+
 from ctypes import *
 
 print('loading library')
