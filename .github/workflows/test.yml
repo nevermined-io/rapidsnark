@@ -13,6 +13,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive    
     - name: Set up node.js
       uses: actions/setup-node@v1
       with:
@@ -28,7 +30,7 @@ jobs:
         git clone https://github.com/brainhub/SHA3IUF
         cd SHA3IUF && make && sudo make install && cd ..
         rm -rf SHA3IUF
-        git submodule update --init --recursive
+        # git submodule update --init --recursive
         npm i 
         npx task createFieldSources
         cd build
