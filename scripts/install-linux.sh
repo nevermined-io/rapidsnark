@@ -2,7 +2,7 @@
 
 if ! grep adx /proc/cpuinfo > /dev/null
 then
-    git clone https://github.com/nevermined-io/snark-tools
+    git clone https://github.com/mrsmkl/snark-tools
     cd snark-tools
     npm i -g
     cd ..
