@@ -14,7 +14,6 @@ extern "C" {
         return (void*)dta;
     }
     const char *fullprove(void *ptr, const char *_wtns, const char *_in) {
-        std::cerr << "??? " << _in << "\n";
         std::stringstream s;
         s << "keytransfer-prover " << _in;
         system(s.str().c_str());
