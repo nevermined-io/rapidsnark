@@ -18,7 +18,7 @@ else
     git clone https://github.com/brainhub/SHA3IUF
     cd SHA3IUF && make && sudo make install && cd ..
     rm -rf SHA3IUF
-    # git submodule update --init --recursive
+    git submodule update --init --recursive
     npm i 
     npx task createFieldSources
     cd build
