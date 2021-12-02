@@ -14,6 +14,7 @@ RUN sudo mkdir -p /usr/local/lib \
 RUN git clone https://github.com/brainhub/SHA3IUF
 RUN cd SHA3IUF && make && sudo make install
 
-RUN git clone   https://github.com/nevermined-io/rapidsnark
+RUN git clone     https://github.com/nevermined-io/rapidsnark
 RUN cd rapidsnark \
+ && git submodule update --init --recursive \
  && sh ./scripts/install-linux.sh
