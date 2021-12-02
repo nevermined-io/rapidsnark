@@ -1,4 +1,4 @@
-#/bin/sh
+#!/bin/sh
 
 if [ grep adx /proc/cpuinfo > /dev/null ]
 then
@@ -25,6 +25,10 @@ then
     sudo ldconfig
 
 else
+    git clone https://github.com/nevermined-io/snark-tools
+    cd snark-tools
+    npm i -g
+    cd ..
     sudo apt-get -y install g++ build-essential
     sudo mkdir -p /usr/local/lib && sudo mkdir -p /usr/local/include && sudo mkdir -p /usr/local/share/keytransfer
     g++ -shared -o alt/libkeytransfer.so -fPIC alt/capi.cpp

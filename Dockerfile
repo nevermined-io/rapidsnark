@@ -16,20 +16,4 @@ RUN cd SHA3IUF && make && sudo make install
 
 RUN git clone   https://github.com/nevermined-io/rapidsnark
 RUN cd rapidsnark \
- && git submodule update --init --recursive \
- && npm i \
- && npx task createFieldSources \
- && cd build \
- && sed -i 's/extern Fq_fail/;extern Fq_fail/g' *.asm \
- && sed -i 's/extern Fr_fail/;extern Fr_fail/g' *.asm \
- && sed -i 's/call    Fq_fail/;call    Fq_fail/g' *.asm \
- && sed -i 's/call    Fr_fail/;call    Fr_fail/g' *.asm \
- && nasm -felf64 fq.asm \
- && nasm -felf64 fr.asm \
- && cd .. \
- && npx task buildApi \
- && sudo cp build/libkeytransfer.so /usr/local/lib \
- && sudo cp keytransfer.zkey keytransfer.dat keytransfer.wasm /usr/local/share/keytransfer \
- && sudo ldconfig \
- && python3.9 test.py
-
+ && sh ./scripts/install-linux.sh
