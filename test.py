@@ -13,6 +13,6 @@ libkey.fullprove.restype = c_char_p
 print('calling make')
 handle = libkey.make(b"/usr/local/share/keytransfer/keytransfer.zkey", b"/usr/local/share/keytransfer/keytransfer.dat")
 print('calling fullprove')
-res = libkey.fullprove(c_void_p(handle), b"/tmp/tmp.wtns", b"/tmp/input.json")
+res = libkey.fullprove(c_void_p(handle), b"/tmp/tmp.wtns", b"input.json")
 print(res)
 print(res.decode())
