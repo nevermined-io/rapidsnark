@@ -18,7 +18,6 @@
 
 #include "calcwit.hpp"
 #include "circom.hpp"
-#include "utils.hpp"
 #include <sstream>
 #include <string>
 #include <iomanip>

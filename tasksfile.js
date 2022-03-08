@@ -142,7 +142,6 @@ function compile(file, out) {
     " -I."+
     " -I../src"+
     " -I../depends/ffiasm/c"+
-    " -I../depends/circom_runtime/c"+
     " -I../depends/json/single_include"+
     " " + file +
     " -o " + out +
@@ -158,7 +157,7 @@ function buildApi() {
         "../depends/ffiasm/c/splitparstr.cpp",
         "../depends/ffiasm/c/alt_bn128.cpp",
 //        "../depends/circom_runtime/c/utils.cpp",
-        "../depends/circom_runtime/c/calcwit.cpp",
+        "../src/calcwit.cpp",
         "../keytransfer.cpp",
         "../src/binfile_utils.cpp",
         "../src/zkey_utils_plonk.cpp",
