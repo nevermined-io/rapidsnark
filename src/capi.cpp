@@ -276,7 +276,7 @@ extern "C" {
         std::string inFilename = _in;
 
         // TODO: make sure reset and join aren't needed anymore
-        // dta->calcwit->reset();
+        dta->calcwit->reset();
         loadJson(dta->calcwit, inFilename);
         // dta->calcwit->join();
         writeBinWitness(dta->calcwit, wtnsFilename);

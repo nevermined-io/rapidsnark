@@ -43,6 +43,8 @@ public:
   // Public functions
   void setInputSignal(u64 h, uint i, FrElement &val);
 
+  void reset();
+
   inline uint getRemaingInputsToBeSet() {
     return inputSignalAssignedCounter;
   }

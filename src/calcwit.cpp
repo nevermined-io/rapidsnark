@@ -42,6 +42,21 @@ Circom_CalcWit::Circom_CalcWit (Circom_Circuit *aCircuit, uint maxTh) {
 
 }
 
+void Circom_CalcWit::reset() {
+  inputSignalAssignedCounter = get_main_input_signal_no();
+  inputSignalAssigned = new bool[inputSignalAssignedCounter];
+  for (int i = 0; i< inputSignalAssignedCounter; i++) {
+    inputSignalAssigned[i] = false;
+  }
+  signalValues = new FrElement[get_total_signal_no()];
+  Fr_str2element(&signalValues[0], "1");
+  componentMemory = new Circom_Component[get_number_of_components()];
+  circuitConstants = circuit ->circuitConstants;
+  templateInsId2IOSignalInfo = circuit -> templateInsId2IOSignalInfo;
+
+
+}
+
 Circom_CalcWit::~Circom_CalcWit() {
   // ...
 }
