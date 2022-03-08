@@ -42,71 +42,58 @@ struct my_data {
     Circom_CalcWit *calcwit;
 };
 
-typedef void (*ItFunc)(Circom_CalcWit *ctx, int idx, json val);
 
-void iterateArr(Circom_CalcWit *ctx, int o, Circom_Sizes sizes, json jarr, ItFunc f) {
-  if (!jarr.is_array()) {
-    assert((sizes[0] == 1)&&(sizes[1] == 0));
-    f(ctx, o, jarr);
-  } else {
-    int n = sizes[0] / sizes[1];
-    for (int i=0; i<n; i++) {
-      iterateArr(ctx, o + i*sizes[1], sizes+1, jarr[i], f);
-    }
-  }
-}
-
-void itFunc(Circom_CalcWit *ctx, int o, json val) {
-
+void json2FrElements (json val, std::vector<FrElement> & vval){
+  if (!val.is_array()) {
     FrElement v;
-
     std::string s;
-
     if (val.is_string()) {
         s = val.get<std::string>();
     } else if (val.is_number()) {
-
         double vd = val.get<double>();
         std::stringstream stream;
         stream << std::fixed << std::setprecision(0) << vd;
         s = stream.str();
     } else {
-        handle_error("Invalid JSON type");
+        throw new std::runtime_error("Invalid JSON type");
     }
-
     Fr_str2element (&v, s.c_str());
-
-    ctx->setSignal(0, 0, o, &v);
+    vval.push_back(v);
+  } else {
+    for (uint i = 0; i < val.size(); i++) {
+      json2FrElements (val[i], vval);
+    }
+  }
 }
+
 
 void loadJson(Circom_CalcWit *ctx, std::string filename) {
-    std::ifstream inStream(filename);
-    json j;
-    inStream >> j;
-
-    u64 nItems = j.size();
-    // printf("Items : %llu\n",nItems);
-    for (json::iterator it = j.begin(); it != j.end(); ++it) {
-      // std::cout << it.key() << " => " << it.value() << '\n';
-      u64 h = fnv1a(it.key());
-      int o;
+  std::ifstream inStream(filename);
+  json j;
+  inStream >> j;
+  
+  u64 nItems = j.size();
+  // printf("Items : %llu\n",nItems);
+  for (json::iterator it = j.begin(); it != j.end(); ++it) {
+    // std::cout << it.key() << " => " << it.value() << '\n';
+    u64 h = fnv1a(it.key());
+    std::vector<FrElement> v;
+    json2FrElements(it.value(),v);
+    for (uint i = 0; i<v.size(); i++){
       try {
-        o = ctx->getSignalOffset(0, h);
+        // std::cout << it.key() << "," << i << " => " << Fr_element2str(&(v[i])) << '\n';
+        ctx->setInputSignal(h,i,v[i]);
       } catch (std::runtime_error e) {
         std::ostringstream errStrStream;
-        errStrStream << "Error loadin variable: " << it.key() << "\n" << e.what();
+        errStrStream << "Error loading variable: " << it.key() << "\n" << e.what();
         throw std::runtime_error(errStrStream.str() );
       }
-      Circom_Sizes sizes = ctx->getSignalSizes(0, h);
-      iterateArr(ctx, o, sizes, it.value(), itFunc);
     }
+  }
 }
 
-#define ADJ_P(a) *((void **)&a) = (void *)(((char *)circuit)+ (uint64_t)(a))
-
-Circom_Circuit *loadCircuit(std::string const &datFileName) {
-    Circom_Circuit *circuitF;
-    Circom_Circuit *circuit;
+Circom_Circuit* loadCircuit(std::string const &datFileName) {
+    Circom_Circuit *circuit = new Circom_Circuit;
 
     int fd;
     struct stat sb;
@@ -116,43 +103,75 @@ Circom_Circuit *loadCircuit(std::string const &datFileName) {
         std::cout << ".dat file not found: " << datFileName << "\n";
         throw std::system_error(errno, std::generic_category(), "open");
     }
-
-    if (fstat(fd, &sb) == -1) {         /* To obtain file size */
+    
+    if (fstat(fd, &sb) == -1) {          /* To obtain file size */
         throw std::system_error(errno, std::generic_category(), "fstat");
     }
 
-    circuitF = (Circom_Circuit *)mmap(NULL, sb.st_size, PROT_READ , MAP_PRIVATE, fd, 0);
+    u8* bdata = (u8*)mmap(NULL, sb.st_size, PROT_READ , MAP_PRIVATE, fd, 0);
     close(fd);
 
-    circuit = (Circom_Circuit *)malloc(sb.st_size);
-    memcpy((void *)circuit, (void *)circuitF, sb.st_size);
+    circuit->InputHashMap = new HashSignalPair[get_size_of_input_hashmap()];
+    uint dsize = get_size_of_input_hashmap()*sizeof(HashSignalPair);
+    memcpy((void *)(circuit->InputHashMap), (void *)bdata, dsize);
 
-    munmap(circuitF, sb.st_size);
+    circuit->witness2SignalList = new u64[get_size_of_witness()];
+    uint inisize = dsize;    
+    dsize = get_size_of_witness()*sizeof(u64);
+    memcpy((void *)(circuit->witness2SignalList), (void *)(bdata+inisize), dsize);
 
-    ADJ_P(circuit->wit2sig);
-    ADJ_P(circuit->components);
-    ADJ_P(circuit->mapIsInput);
-    ADJ_P(circuit->constants);
-    ADJ_P(circuit->P);
-    ADJ_P(circuit->componentEntries);
-
-    for (int i=0; i<circuit->NComponents; i++) {
-        ADJ_P(circuit->components[i].hashTable);
-        ADJ_P(circuit->components[i].entries);
-        circuit->components[i].fn = _functionTable[  (uint64_t)circuit->components[i].fn];
+    circuit->circuitConstants = new FrElement[get_size_of_constants()];
+    if (get_size_of_constants()>0) {
+      inisize += dsize;
+      dsize = get_size_of_constants()*sizeof(FrElement);
+      memcpy((void *)(circuit->circuitConstants), (void *)(bdata+inisize), dsize);
     }
 
-    for (int i=0; i<circuit->NComponentEntries; i++) {
-        ADJ_P(circuit->componentEntries[i].sizes);
-    }
+    std::map<u32,IODefPair> templateInsId2IOSignalInfo1;
+    if (get_size_of_io_map()>0) {
+      u32 index[get_size_of_io_map()];
+      inisize += dsize;
+      dsize = get_size_of_io_map()*sizeof(u32);
+      memcpy((void *)index, (void *)(bdata+inisize), dsize);
+      inisize += dsize;
+      assert(inisize % sizeof(u32) == 0);    
+      assert(sb.st_size % sizeof(u32) == 0);
+      u32 dataiomap[(sb.st_size-inisize)/sizeof(u32)];
+      memcpy((void *)dataiomap, (void *)(bdata+inisize), sb.st_size-inisize);
+      u32* pu32 = dataiomap;
 
+      for (int i = 0; i < get_size_of_io_map(); i++) {
+	u32 n = *pu32;
+	IODefPair p;
+	p.len = n;
+	IODef defs[n];
+	pu32 += 1;
+	for (u32 j = 0; j <n; j++){
+	  defs[j].offset=*pu32;
+	  u32 len = *(pu32+1);
+	  defs[j].len = len;
+	  defs[j].lengths = new u32[len];
+	  memcpy((void *)defs[j].lengths,(void *)(pu32+2),len*sizeof(u32));
+	  pu32 += len + 2;
+	}
+	p.defs = (IODef*)calloc(10, sizeof(IODef));
+	for (u32 j = 0; j < p.len; j++){
+	  p.defs[j] = defs[j];
+	}
+	templateInsId2IOSignalInfo1[index[i]] = p;
+      }
+    }
+    circuit->templateInsId2IOSignalInfo = move(templateInsId2IOSignalInfo1);
+    
+    munmap(bdata, sb.st_size);
+    
     return circuit;
 }
 
-void writeOutBin(Circom_CalcWit *ctx, std::string filename) {
+void writeBinWitness(Circom_CalcWit *ctx, std::string wtnsFileName) {
     FILE *write_ptr;
 
-    write_ptr = fopen(filename.c_str(),"wb");
+    write_ptr = fopen(wtnsFileName.c_str(),"wb");
 
     fwrite("wtns", 4, 1, write_ptr);
 
@@ -175,26 +194,26 @@ void writeOutBin(Circom_CalcWit *ctx, std::string filename) {
 
     fwrite(Fr_q.longVal, Fr_N64*8, 1, write_ptr);
 
-    u32 nVars = circuit->NVars;
+    uint Nwtns = get_size_of_witness();
+    
+    u32 nVars = (u32)Nwtns;
     fwrite(&nVars, 4, 1, write_ptr);
-
 
     // Data
     u32 idSection2 = 2;
     fwrite(&idSection2, 4, 1, write_ptr);
-
-    u64 idSection2length = (u64)n8*(u64)circuit->NVars;
+    
+    u64 idSection2length = (u64)n8*(u64)Nwtns;
     fwrite(&idSection2length, 8, 1, write_ptr);
 
     FrElement v;
 
-    for (int i=0;i<circuit->NVars;i++) {
+    for (int i=0;i<Nwtns;i++) {
         ctx->getWitness(i, &v);
         Fr_toLongNormal(&v, &v);
         fwrite(v.longVal, Fr_N64*8, 1, write_ptr);
     }
     fclose(write_ptr);
-
 }
 
 extern "C" {
@@ -257,10 +276,11 @@ extern "C" {
         std::string wtnsFilename = _wtns;
         std::string inFilename = _in;
 
-        dta->calcwit->reset();
+        // TODO: make sure reset and join aren't needed anymore
+        // dta->calcwit->reset();
         loadJson(dta->calcwit, inFilename);
-        dta->calcwit->join();
-        writeOutBin(dta->calcwit, wtnsFilename);
+        // dta->calcwit->join();
+        writeBinWitness(dta->calcwit, wtnsFilename);
         // std::cerr << "wrote binary\n";
 
         auto wtns = BinFileUtils::openExisting(wtnsFilename, "wtns", 2);

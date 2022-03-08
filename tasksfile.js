@@ -157,7 +157,7 @@ function buildApi() {
         "../depends/ffiasm/c/naf.cpp",
         "../depends/ffiasm/c/splitparstr.cpp",
         "../depends/ffiasm/c/alt_bn128.cpp",
-        "../depends/circom_runtime/c/utils.cpp",
+//        "../depends/circom_runtime/c/utils.cpp",
         "../depends/circom_runtime/c/calcwit.cpp",
         "../keytransfer.cpp",
         "../src/binfile_utils.cpp",
