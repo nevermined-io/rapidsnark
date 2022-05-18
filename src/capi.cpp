@@ -110,8 +110,8 @@ Circom_Circuit* loadCircuit(std::string const &datFileName) {
     u8* bdata = (u8*)mmap(NULL, sb.st_size, PROT_READ , MAP_PRIVATE, fd, 0);
     close(fd);
 
-    circuit->InputHashMap = new HashSignalPair[get_size_of_input_hashmap()];
-    uint dsize = get_size_of_input_hashmap()*sizeof(HashSignalPair);
+    circuit->InputHashMap = new HashSignalInfo[get_size_of_input_hashmap()];
+    uint dsize = get_size_of_input_hashmap()*sizeof(HashSignalInfo);
     memcpy((void *)(circuit->InputHashMap), (void *)bdata, dsize);
 
     circuit->witness2SignalList = new u64[get_size_of_witness()];
@@ -140,24 +140,24 @@ Circom_Circuit* loadCircuit(std::string const &datFileName) {
       u32* pu32 = dataiomap;
 
       for (int i = 0; i < get_size_of_io_map(); i++) {
-	u32 n = *pu32;
-	IODefPair p;
-	p.len = n;
-	IODef defs[n];
-	pu32 += 1;
-	for (u32 j = 0; j <n; j++){
-	  defs[j].offset=*pu32;
-	  u32 len = *(pu32+1);
-	  defs[j].len = len;
-	  defs[j].lengths = new u32[len];
-	  memcpy((void *)defs[j].lengths,(void *)(pu32+2),len*sizeof(u32));
-	  pu32 += len + 2;
-	}
-	p.defs = (IODef*)calloc(10, sizeof(IODef));
-	for (u32 j = 0; j < p.len; j++){
-	  p.defs[j] = defs[j];
-	}
-	templateInsId2IOSignalInfo1[index[i]] = p;
+        u32 n = *pu32;
+        IODefPair p;
+        p.len = n;
+        IODef defs[n];
+        pu32 += 1;
+        for (u32 j = 0; j <n; j++){
+          defs[j].offset=*pu32;
+          u32 len = *(pu32+1);
+          defs[j].len = len;
+          defs[j].lengths = new u32[len];
+          memcpy((void *)defs[j].lengths,(void *)(pu32+2),len*sizeof(u32));
+          pu32 += len + 2;
+        }
+        p.defs = (IODef*)calloc(10, sizeof(IODef));
+        for (u32 j = 0; j < p.len; j++){
+          p.defs[j] = defs[j];
+        }
+        templateInsId2IOSignalInfo1[index[i]] = p;
       }
     }
     circuit->templateInsId2IOSignalInfo = move(templateInsId2IOSignalInfo1);

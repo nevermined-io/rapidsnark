@@ -40,10 +40,12 @@ public:
   Circom_CalcWit(Circom_Circuit *aCircuit, uint numTh = NMUTEXES);
   ~Circom_CalcWit();
 
+  void reset();
+
   // Public functions
   void setInputSignal(u64 h, uint i, FrElement &val);
-
-  void reset();
+  
+  u64 getInputSignalSize(u64 h);
 
   inline uint getRemaingInputsToBeSet() {
     return inputSignalAssignedCounter;
@@ -56,6 +58,11 @@ public:
   std::string getTrace(u64 id_cmp);
 
   std::string generate_position_array(uint* dimensions, uint size_dimensions, uint index);
+
+private:
+  
+  uint getInputSignalHashPosition(u64 h);
+
 };
 
 typedef void (*Circom_TemplateFunction)(uint __cIdx, Circom_CalcWit* __ctx); 
