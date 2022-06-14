@@ -9,6 +9,12 @@ fi
 
 sudo apt-get -y install g++ nasm libgmp-dev libsodium-dev build-essential
 sudo mkdir -p /usr/local/lib && sudo mkdir -p /usr/local/include && sudo mkdir -p /usr/local/share/keytransfer
+
+g++ -shared -o alt/libkeytransfer.so -fPIC alt/capi.cpp
+sudo cp alt/libkeytransfer.so /usr/local/lib/libkeytransfer_noadx.so
+sudo cp keytransfer.zkey keytransfer.dat keytransfer.wasm /usr/local/share/keytransfer
+sudo ldconfig
+
 git clone https://github.com/brainhub/SHA3IUF
 cd SHA3IUF && make && sudo make install && cd ..
 rm -rf SHA3IUF
@@ -24,8 +30,6 @@ nasm -felf64 fq.asm
 nasm -felf64 fr.asm
 cd ..
 npx task buildApi
-g++ -shared -o alt/libkeytransfer.so -fPIC alt/capi.cpp
-sudo cp alt/libkeytransfer.so /usr/local/lib/libkeytransfer_noadx.so
 sudo cp build/libkeytransfer.so /usr/local/lib/libkeytransfer.so
 sudo cp keytransfer.zkey keytransfer.dat keytransfer.wasm /usr/local/share/keytransfer
 sudo ldconfig
